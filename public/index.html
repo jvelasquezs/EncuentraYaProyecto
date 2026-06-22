@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CriptoMapa | Geolocalización de Cripto-Comercios</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #151c2c;
+            --bg-accent: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --brand-color: #00ffa3; /* Verde neón cripto/fintech */
+            --brand-gradient: linear-gradient(135deg, #00ffa3 0%, #00b8ff 100%);
+            --danger: #ff4a6b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR PREMIUM --- */
+        #sidebar {
+            width: 400px;
+            background: var(--bg-secondary);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .brand-header {
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-header i {
+            font-size: 24px;
+            background: var(--brand-gradient);
+            background-clip: text; /* Add this standard property to clear the warning */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-header span {
+            color: var(--brand-color);
+        }
+
+        .content-tabs {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- FORMULARIO ESTILIZADO --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            background: var(--bg-accent);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 10px rgba(0, 255, 163, 0.2);
+        }
+
+        .form-group input[readonly] {
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--brand-color);
+            cursor: not-allowed;
+            font-family: monospace;
+        }
+
+        .geo-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .info-note {
+            background: rgba(0, 184, 255, 0.1);
+            border-left: 3px solid #00b8ff;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #b4e4ff;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        btn-submit {
+            display: block;
+            width: 100%;
+            background: var(--brand-gradient);
+            color: #05070f;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 163, 0.3);
+        }
+
+        btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 163, 0.5);
+        }
+
+        /* --- MAPA --- */
+        #map {
+            flex: 1;
+            height: 100%;
+            background: var(--bg-primary);
+        }
+
+        /* --- Personalización de los Popups de Leaflet para integrarlos al diseño oscuro --- */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-secondary) !important;
+            color: var(--text-main) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px !important;
+            padding: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-secondary) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--brand-color);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .popup-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-crypto {
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--brand-color);
+            border: 1px solid rgba(0, 255, 163, 0.2);
+        }
+
+        .badge-platform {
+            background: rgba(0, 184, 255, 0.1);
+            color: #00b8ff;
+            border: 1px solid rgba(0, 184, 255, 0.2);
+        }
+
+        /* Modificar el estilo del mapa de OpenStreetMap a un tono más oscuro */
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="brand-header">
+            <i class="fa-solid fa-layer-group"></i>
+            <h1>Cripto<span>Mapa</span></h1>
+        </div>
+        
+        <div class="content-tabs">
+            <div class="section-title">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Expansión de Red Nacional</span>
+            </div>
+
+            <div class="info-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Haz clic en cualquier punto del mapa para capturar las coordenadas GPS del comercio.</span>
+            </div>
+
+            <form id="comercioForm">
+                <div class="form-group">
+                    <label for="nombre">Nombre de la Empresa / Comercio</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-store"></i>
+                        <input type="text" id="nombre" required placeholder="Ej: Tech Hub Venezuela">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Actividad Comercial o Descripción</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-tags"></i>
+                        <input type="text" id="descripcion" placeholder="Ej: Venta de equipos y soporte técnico">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="plataformas">Ecosistema Financiero (Ecosistema / Apps)</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-wallet"></i>
+                        <input type="text" id="plataformas" placeholder="Ej: Binance, Crypto, Zelle">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="monedas">Divisas & Criptoactivos Aceptados</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-coins"></i>
+                        <input type="text" id="monedas" placeholder="Ej: USDT, BTC, USD, BS">
+                    </div>
+                </div>
+
+                <div class="geo-inputs">
+                    <div class="form-group">
+                        <label>Latitud</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                            <input type="number" step="any" id="latitud" required readonly placeholder="0.0000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Longitud</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                            <input type="number" step="any" id="longitud" required readonly placeholder="0.0000">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Desplegar en el Mapa</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Inicializar mapa centrado en Venezuela de forma predeterminada
+        const map = L.map('map', { zoomControl: false }).setView([10.4806, -66.9036], 14); 
+        
+        // Agregar control de zoom reposicionado
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // Capa de mapa base
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© CriptoMapa Global Ecosystem'
+        }).addTo(map);
+
+        let marcadorSelección;
+
+        // Capturar georreferenciación con clic
+        map.on('click', function(e) {
+            const { lat, lng } = e.latlng;
+            document.getElementById('latitud').value = lat.toFixed(6);
+            document.getElementById('longitud').value = lng.toFixed(6);
+
+            if (marcadorSelección) {
+                marcadorSelección.setLatLng(e.latlng);
+            } else {
+                // Crear un icono personalizado de color azul para el punto de selección temporal
+                const tempIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+                marcadorSelección = L.marker(e.latlng, { icon: tempIcon }).addTo(map);
+            }
+        });
+
+        // Consumir API del Backend para renderizar los comercios con diseño Premium
+        async function cargarComercios() {
+            try {
+                const res = await fetch('/api/comercios');
+                const comercios = await res.json();
+
+                // Limpiar marcadores viejos si existieran (excepto el de selección)
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker && layer !== marcadorSelección) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                // Icono verde personalizado de nivel corporativo para comercios activos
+                const greenIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+
+                comercios.forEach(comercio => {
+                    const [longitud, latitud] = comercio.ubicacion.coordinates;
+                    
+                    const marker = L.marker([latitud, longitud], { icon: greenIcon }).addTo(map);
+                    
+                    // Renderizado de las insignias (Badges) dinámicas de criptos y plataformas
+                    const plataformasBadges = comercio.plataformas.map(p => `<span class="badge badge-platform">${p}</span>`).join('');
+                    const monedasBadges = comercio.monedas.map(m => `<span class="badge badge-crypto">${m}</span>`).join('');
+
+                    marker.bindPopup(`
+                        <div class="popup-card">
+                            <h3><i class="fa-solid fa-circle-check"></i> ${comercio.nombre}</h3>
+                            <p>${comercio.descripcion || 'Sin descripción corporativa registrada.'}</p>
+                            <div style="margin-top: 8px;">
+                                <div style="font-size: 11px; color: #94a3b8; font-weight:600;">PASARELAS / CANALES:</div>
+                                <div class="badge-container">${plataformasBadges}</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <div style="font-size: 11px; color: #94a3b8; font-weight:600;">ACTIVOS VALIDADOS:</div>
+                                <div class="badge-container">${monedasBadges}</div>
+                            </div>
+                        </div>
+                    `);
+                });
+            } catch (err) {
+                console.error("Error conectando con la API de georreferenciación:", err);
+            }
+        }
+
+        // Enviar formulario mediante AJAX
+        document.getElementById('comercioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const datos = {
+                nombre: document.getElementById('nombre').value,
+                descripcion: document.getElementById('descripcion').value,
+                plataformas: document.getElementById('plataformas').value.split(',').map(p => p.trim()).filter(p => p !== ""),
+                monedas: document.getElementById('monedas').value.split(',').map(m => m.trim()).filter(m => m !== ""),
+                latitud: document.getElementById('latitud').value,
+                longitud: document.getElementById('longitud').value
+            };
+
+            try {
+                const response = await fetch('/api/comercios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+
+                if (response.ok) {
+                    document.getElementById('comercioForm').reset();
+                    if (marcadorSelección) {
+                        map.removeLayer(marcadorSelección);
+                        marcadorSelección = null;
+                    }
+                    await cargarComercios();
+                } else {
+                    alert('Error en los parámetros de la pasarela del servidor.');
+                }
+            } catch (error) {
+                console.error("Error en la petición POST:", error);
+            }
+        });
+
+        // Inicializar lectura de la base de datos distribuida
+        cargarComercios();
+    </script>
+</body>
+</html>
