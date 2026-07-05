@@ -1,0 +1,270 @@
+import React, { useState, useContext, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+
+const Login = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { login, register } = useContext(AuthContext);
+
+  const isLogin = location.pathname === '/login';
+
+  // State for login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // State for registration
+  const [registerData, setRegisterData] = useState({
+    nombreTienda: '',
+    responsable: '',
+    rif: '',
+    telefono: '',
+    correo: '',
+    password: '',
+    descripcion: '',
+    contacto_whatsapp: '',
+    contacto_instagram: '',
+    plataformas: '',
+    monedas: ''
+  });
+  const [logoFile, setLogoFile] = useState(null);
+
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Clear errors when changing tab
+  useEffect(() => {
+    setError('');
+    setSuccess('');
+  }, [isLogin]);
+
+  const handleRegisterChange = (e) => {
+    setRegisterData({ ...registerData, [e.target.name]: e.target.value });
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await login(loginEmail, loginPassword);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al iniciar sesión. Verifica tus credenciales.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombreTienda', registerData.nombreTienda);
+      formDataToSend.append('responsable', registerData.responsable);
+      formDataToSend.append('rif', registerData.rif);
+      formDataToSend.append('telefono', registerData.telefono);
+      formDataToSend.append('correo', registerData.correo);
+      formDataToSend.append('password', registerData.password);
+      formDataToSend.append('descripcion', registerData.descripcion || '');
+      formDataToSend.append('contacto_whatsapp', registerData.contacto_whatsapp || '');
+      formDataToSend.append('contacto_instagram', registerData.contacto_instagram || '');
+      formDataToSend.append('plataformas', registerData.plataformas || '');
+      formDataToSend.append('monedas', registerData.monedas || '');
+      
+      if (logoFile) {
+        formDataToSend.append('logo', logoFile);
+      }
+
+      await register(formDataToSend);
+      setSuccess('¡Registro exitoso! Redirigiendo...');
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al registrar el comercio.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className={`auth-card ${!isLogin ? 'auth-card-wide' : ''}`}>
+        
+        {/* TAB NAVIGATION */}
+        <div className="auth-tabs">
+          <button 
+            type="button" 
+            className={`auth-tab-btn ${isLogin ? 'active' : ''}`}
+            onClick={() => navigate('/login')}
+          >
+            <i className="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+          </button>
+          <button 
+            type="button" 
+            className={`auth-tab-btn ${!isLogin ? 'active' : ''}`}
+            onClick={() => navigate('/register')}
+          >
+            <i className="fa-solid fa-store"></i> Registrar Comercio
+          </button>
+        </div>
+
+        <div className="auth-header" style={{ marginTop: '20px' }}>
+          <div className="auth-icon">
+            <i className={isLogin ? "fa-solid fa-lock" : "fa-solid fa-rocket"}></i>
+          </div>
+          <h2>{isLogin ? 'Acceso Comercio' : 'Registra tu Comercio'}</h2>
+          <p>
+            {isLogin 
+              ? 'Ingresa al panel para actualizar tus productos y ubicación' 
+              : 'Completa los datos de tu negocio para aparecer en Encuentra Ya'}
+          </p>
+        </div>
+
+        {error && <div className="auth-error"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
+        {success && <div className="auth-success" style={{
+          background: 'rgba(0, 255, 163, 0.1)',
+          color: 'var(--crypt-green)',
+          border: '1px solid rgba(0, 255, 163, 0.2)',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}><i className="fa-solid fa-circle-check"></i> {success}</div>}
+
+        {isLogin ? (
+          /* --- LOGIN FORM --- */
+          <form onSubmit={handleLoginSubmit}>
+            <div className="form-group">
+              <label>Correo electrónico</label>
+              <div className="input-icon-wrapper">
+                <i className="fa-solid fa-envelope"></i>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={e => setLoginEmail(e.target.value)}
+                  placeholder="comercio@correo.com"
+                  required
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Contraseña</label>
+              <div className="input-icon-wrapper">
+                <i className="fa-solid fa-lock"></i>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Ingresando...' : 'Ingresar al Panel'}
+            </button>
+          </form>
+        ) : (
+          /* --- REGISTER FORM --- */
+          <form onSubmit={handleRegisterSubmit}>
+            <div className="form-section-title">
+              <i className="fa-solid fa-building"></i> Datos del Comercio
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Nombre del Comercio *</label>
+                <input name="nombreTienda" value={registerData.nombreTienda} onChange={handleRegisterChange} placeholder="Ej: Tech Hub Venezuela" required />
+              </div>
+              <div className="form-group">
+                <label>RIF *</label>
+                <input name="rif" value={registerData.rif} onChange={handleRegisterChange} placeholder="Ej: J-12345678-9" required />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Responsable *</label>
+                <input name="responsable" value={registerData.responsable} onChange={handleRegisterChange} placeholder="Nombre del responsable" required />
+              </div>
+              <div className="form-group">
+                <label>Logo del Comercio (Opcional)</label>
+                <input 
+                  type="file" 
+                  name="logo" 
+                  onChange={(e) => setLogoFile(e.target.files[0])} 
+                  accept="image/*" 
+                  style={{ padding: '8px 12px' }}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Descripción del Comercio</label>
+              <textarea name="descripcion" value={registerData.descripcion} onChange={handleRegisterChange} placeholder="¿Qué ofrece tu comercio?" rows="2" />
+            </div>
+
+            <div className="form-section-title">
+              <i className="fa-solid fa-wallet"></i> Métodos de Pago
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Pasarelas / Canales</label>
+                <input name="plataformas" value={registerData.plataformas} onChange={handleRegisterChange} placeholder="Binance Pay, Pago Móvil, Zelle" />
+              </div>
+              <div className="form-group">
+                <label>Monedas / Divisas Aceptadas</label>
+                <input name="monedas" value={registerData.monedas} onChange={handleRegisterChange} placeholder="USDT, BTC, USD, BS" />
+              </div>
+            </div>
+
+            <div className="form-section-title">
+              <i className="fa-solid fa-address-book"></i> Contacto & Acceso
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Teléfono *</label>
+                <input name="telefono" value={registerData.telefono} onChange={handleRegisterChange} placeholder="+58 412-5551234" required />
+              </div>
+              <div className="form-group">
+                <label>WhatsApp</label>
+                <input name="contacto_whatsapp" value={registerData.contacto_whatsapp} onChange={handleRegisterChange} placeholder="+584125551234" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Instagram</label>
+                <input name="contacto_instagram" value={registerData.contacto_instagram} onChange={handleRegisterChange} placeholder="@micomercio" />
+              </div>
+              <div className="form-group">
+                <label>Correo *</label>
+                <input name="correo" type="email" value={registerData.correo} onChange={handleRegisterChange} placeholder="correo@comercio.com" required />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Contraseña *</label>
+              <input name="password" type="password" value={registerData.password} onChange={handleRegisterChange} placeholder="Mínimo 6 caracteres" required />
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Registrando...' : 'Registrar Comercio'}
+            </button>
+          </form>
+        )}
+
+        <div className="auth-footer">
+          <a href="http://localhost:3000" className="map-link">
+            <i className="fa-solid fa-map-location-dot"></i> Volver a Encuentra Ya
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
