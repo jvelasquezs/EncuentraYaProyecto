@@ -23,7 +23,7 @@ const seedDB = async () => {
     'Venta de equipos gaming, computadoras y accesorios de alta gama. Soporte técnico especializado.',
     JSON.stringify(['Binance Pay', 'Pago Móvil', 'Zelle']),
     JSON.stringify(['USDT', 'BTC', 'USD', 'BS']),
-    10.4806, -66.9036
+    9.9110, -67.3550
   );
 
   // Tienda 2 - Cafetería Crypto (Plaza Venezuela)
@@ -38,7 +38,7 @@ const seedDB = async () => {
     'Cafetería artesanal que acepta criptomonedas. Café de especialidad, pasteles y brunch.',
     JSON.stringify(['Binance Pay', 'Reserve', 'Efectivo']),
     JSON.stringify(['USDT', 'BTC', 'ETH', 'BS']),
-    10.4950, -66.8880
+    9.9130, -67.3520
   );
 
   // Tienda 3 - Tienda de ropa (Altamira)
@@ -53,7 +53,19 @@ const seedDB = async () => {
     'Moda urbana y streetwear. Marcas exclusivas con pagos en crypto.',
     JSON.stringify(['Binance Pay', 'Pago Móvil', 'PayPal']),
     JSON.stringify(['USDT', 'USD', 'BS']),
-    10.4970, -66.8530
+    9.9050, -67.3600
+  );
+
+  // Crear Administrador
+  const adminPassword = await bcrypt.hash('12345678', salt);
+  db.prepare(`
+    INSERT INTO stores (nombreTienda, responsable, rif, telefono, correo, password, logo, rol)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'Administrador del Criptomapa', 'Administrador Principal', 'J-00000000-0',
+    '+58 400-0000000', 'admin@gmail.com', adminPassword,
+    'https://ui-avatars.com/api/?name=Admin&background=1e293b&color=00ffa3&size=120&bold=true&format=png',
+    'Administrador'
   );
 
   // Productos para Tech Hub

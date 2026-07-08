@@ -5,14 +5,32 @@ export const AuthContext = createContext();
 
 const API_URL = 'http://localhost:3000';
 
+const checkTokenExpiry = (token) => {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    const now = Math.floor(Date.now() / 1000);
+    return now >= payload.exp;
+  } catch (e) {
+    return true;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const loggedUserJSON = localStorage.getItem('loggedUser');
     if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON);
-      setUser(user);
+      const parsedUser = JSON.parse(loggedUserJSON);
+      if (checkTokenExpiry(parsedUser.token)) {
+        localStorage.removeItem('loggedUser');
+        setUser(null);
+      } else {
+        setUser(parsedUser);
+      }
     }
   }, []);
 
@@ -36,7 +54,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, setUser, checkTokenExpiry }}>
       {children}
     </AuthContext.Provider>
   );

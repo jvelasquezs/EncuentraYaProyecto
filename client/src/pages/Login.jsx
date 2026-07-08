@@ -2,6 +2,105 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
+const PLATAFORMAS_OPTIONS = [
+  'Binance Pay', 'Pago Móvil', 'Zelle', 'PayPal', 'Reserve',
+  'Zinli', 'Efectivo', 'Transferencia Bancaria', 'Mercado Pago'
+];
+
+const MONEDAS_OPTIONS = [
+  'USDT', 'BTC', 'ETH', 'BNB', 'USD', 'BS', 'EUR', 'SOL', 'USDC', 'TRX'
+];
+
+const TagSelector = ({ label, options, selected, onChange }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+
+  const available = options.filter(opt => !selected.includes(opt));
+
+  const addItem = (item) => {
+    onChange([...selected, item]);
+    setShowDropdown(false);
+    setShowCustomInput(false);
+    setCustomValue('');
+  };
+
+  const removeItem = (item) => {
+    onChange(selected.filter(s => s !== item));
+  };
+
+  const handleCustomSubmit = () => {
+    const trimmed = customValue.trim();
+    if (trimmed && !selected.includes(trimmed)) {
+      addItem(trimmed);
+    }
+  };
+
+  const handleCustomKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCustomSubmit();
+    }
+    if (e.key === 'Escape') {
+      setShowCustomInput(false);
+      setCustomValue('');
+    }
+  };
+
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      <div className="tag-selector">
+        <div className="tag-list">
+          {selected.map(item => (
+            <span key={item} className="tag-chip">
+              {item}
+              <button type="button" onClick={() => removeItem(item)} className="tag-chip-remove">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="tag-add-wrapper">
+          <button type="button" className="tag-add-btn" onClick={() => { setShowDropdown(!showDropdown); setShowCustomInput(false); }}>
+            <i className="fa-solid fa-plus"></i> Añadir
+          </button>
+          {showDropdown && (
+            <div className="tag-dropdown">
+              {available.map(opt => (
+                <button type="button" key={opt} className="tag-dropdown-item" onClick={() => addItem(opt)}>
+                  {opt}
+                </button>
+              ))}
+              <div className="tag-dropdown-divider"></div>
+              {!showCustomInput ? (
+                <button type="button" className="tag-dropdown-item tag-dropdown-otro" onClick={() => setShowCustomInput(true)}>
+                  <i className="fa-solid fa-pen"></i> Otro...
+                </button>
+              ) : (
+                <div className="tag-custom-input-row">
+                  <input
+                    type="text"
+                    className="tag-custom-input"
+                    value={customValue}
+                    onChange={(e) => setCustomValue(e.target.value)}
+                    onKeyDown={handleCustomKeyDown}
+                    placeholder="Escribe aquí..."
+                    autoFocus
+                  />
+                  <button type="button" className="tag-custom-confirm" onClick={handleCustomSubmit} disabled={!customValue.trim()}>
+                    <i className="fa-solid fa-check"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,19 +123,21 @@ const Login = () => {
     descripcion: '',
     contacto_whatsapp: '',
     contacto_instagram: '',
-    plataformas: '',
-    monedas: ''
   });
+  const [selectedPlataformas, setSelectedPlataformas] = useState([]);
+  const [selectedMonedas, setSelectedMonedas] = useState([]);
   const [logoFile, setLogoFile] = useState(null);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isInhabilitado, setIsInhabilitado] = useState(false);
 
   // Clear errors when changing tab
   useEffect(() => {
     setError('');
     setSuccess('');
+    setIsInhabilitado(false);
   }, [isLogin]);
 
   const handleRegisterChange = (e) => {
@@ -51,7 +152,11 @@ const Login = () => {
       await login(loginEmail, loginPassword);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión. Verifica tus credenciales.');
+      if (err.response?.data?.error === 'inhabilitado') {
+        setIsInhabilitado(true);
+      } else {
+        setError(err.response?.data?.error || 'Error al iniciar sesión. Verifica tus credenciales.');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +165,12 @@ const Login = () => {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (registerData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
     setLoading(true);
     try {
       const formDataToSend = new FormData();
@@ -72,8 +183,8 @@ const Login = () => {
       formDataToSend.append('descripcion', registerData.descripcion || '');
       formDataToSend.append('contacto_whatsapp', registerData.contacto_whatsapp || '');
       formDataToSend.append('contacto_instagram', registerData.contacto_instagram || '');
-      formDataToSend.append('plataformas', registerData.plataformas || '');
-      formDataToSend.append('monedas', registerData.monedas || '');
+      formDataToSend.append('plataformas', JSON.stringify(selectedPlataformas));
+      formDataToSend.append('monedas', JSON.stringify(selectedMonedas));
       
       if (logoFile) {
         formDataToSend.append('logo', logoFile);
@@ -93,37 +204,41 @@ const Login = () => {
 
   return (
     <div className="auth-page">
-      <div className={`auth-card ${!isLogin ? 'auth-card-wide' : ''}`}>
+      <div className={`auth-card ${!isLogin && !isInhabilitado ? 'auth-card-wide' : ''}`}>
         
         {/* TAB NAVIGATION */}
-        <div className="auth-tabs">
-          <button 
-            type="button" 
-            className={`auth-tab-btn ${isLogin ? 'active' : ''}`}
-            onClick={() => navigate('/login')}
-          >
-            <i className="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
-          </button>
-          <button 
-            type="button" 
-            className={`auth-tab-btn ${!isLogin ? 'active' : ''}`}
-            onClick={() => navigate('/register')}
-          >
-            <i className="fa-solid fa-store"></i> Registrar Comercio
-          </button>
-        </div>
-
-        <div className="auth-header" style={{ marginTop: '20px' }}>
-          <div className="auth-icon">
-            <i className={isLogin ? "fa-solid fa-lock" : "fa-solid fa-rocket"}></i>
+        {!isInhabilitado && (
+          <div className="auth-tabs">
+            <button 
+              type="button" 
+              className={`auth-tab-btn ${isLogin ? 'active' : ''}`}
+              onClick={() => navigate('/login')}
+            >
+              <i className="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+            </button>
+            <button 
+              type="button" 
+              className={`auth-tab-btn ${!isLogin ? 'active' : ''}`}
+              onClick={() => navigate('/register')}
+            >
+              <i className="fa-solid fa-store"></i> Registrar Comercio
+            </button>
           </div>
-          <h2>{isLogin ? 'Acceso Comercio' : 'Registra tu Comercio'}</h2>
-          <p>
-            {isLogin 
-              ? 'Ingresa al panel para actualizar tus productos y ubicación' 
-              : 'Completa los datos de tu negocio para aparecer en Encuentra Ya'}
-          </p>
-        </div>
+        )}
+
+        {!isInhabilitado && (
+          <div className="auth-header" style={{ marginTop: '20px' }}>
+            <div className="auth-icon">
+              <i className={isLogin ? "fa-solid fa-lock" : "fa-solid fa-rocket"}></i>
+            </div>
+            <h2>{isLogin ? 'Acceso Comercio' : 'Registra tu Comercio'}</h2>
+            <p>
+              {isLogin 
+                ? 'Ingresa al panel para actualizar tus productos y ubicación' 
+                : 'Completa los datos de tu negocio para aparecer en Encuentra Ya'}
+            </p>
+          </div>
+        )}
 
         {error && <div className="auth-error"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
         {success && <div className="auth-success" style={{
@@ -139,7 +254,28 @@ const Login = () => {
           gap: '8px'
         }}><i className="fa-solid fa-circle-check"></i> {success}</div>}
 
-        {isLogin ? (
+        {isInhabilitado ? (
+          <div className="auth-inhabilitado-view">
+            <div className="inhabilitado-icon">
+              <i className="fa-solid fa-user-slash"></i>
+            </div>
+            <h3>Cuenta Inhabilitada</h3>
+            <p>
+              Lo sentimos, pero tu cuenta de comercio ha sido temporalmente inhabilitada por el administrador.
+            </p>
+            <p className="inhabilitado-subtext">
+              Si crees que esto es un error o deseas reactivar tu cuenta, ponte en contacto directo con soporte técnico.
+            </p>
+            <button 
+              type="button" 
+              className="dash-btn dash-btn-primary" 
+              style={{ width: '100%', marginTop: '24px', justifyContent: 'center' }}
+              onClick={() => setIsInhabilitado(false)}
+            >
+              Volver a Intentar
+            </button>
+          </div>
+        ) : isLogin ? (
           /* --- LOGIN FORM --- */
           <form onSubmit={handleLoginSubmit}>
             <div className="form-group">
@@ -214,32 +350,30 @@ const Login = () => {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Pasarelas / Canales</label>
-                <input name="plataformas" value={registerData.plataformas} onChange={handleRegisterChange} placeholder="Binance Pay, Pago Móvil, Zelle" />
+                <TagSelector label="Pasarelas / Canales Aceptados" options={PLATAFORMAS_OPTIONS} selected={selectedPlataformas} onChange={setSelectedPlataformas} />
               </div>
               <div className="form-group">
-                <label>Monedas / Divisas Aceptadas</label>
-                <input name="monedas" value={registerData.monedas} onChange={handleRegisterChange} placeholder="USDT, BTC, USD, BS" />
+                <TagSelector label="Monedas / Divisas Aceptadas" options={MONEDAS_OPTIONS} selected={selectedMonedas} onChange={setSelectedMonedas} />
               </div>
             </div>
 
             <div className="form-section-title">
-              <i className="fa-solid fa-address-book"></i> Contacto & Acceso
+              <i className="fa-solid fa-address-book"></i> Datos de Contacto
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>WhatsApp</label>
+                <input name="contacto_whatsapp" value={registerData.contacto_whatsapp} onChange={handleRegisterChange} placeholder="Ej: +584125551234" />
+              </div>
+              <div className="form-group">
+                <label>Instagram</label>
+                <input name="contacto_instagram" value={registerData.contacto_instagram} onChange={handleRegisterChange} placeholder="@micomercio" />
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Teléfono *</label>
                 <input name="telefono" value={registerData.telefono} onChange={handleRegisterChange} placeholder="+58 412-5551234" required />
-              </div>
-              <div className="form-group">
-                <label>WhatsApp</label>
-                <input name="contacto_whatsapp" value={registerData.contacto_whatsapp} onChange={handleRegisterChange} placeholder="+584125551234" />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Instagram</label>
-                <input name="contacto_instagram" value={registerData.contacto_instagram} onChange={handleRegisterChange} placeholder="@micomercio" />
               </div>
               <div className="form-group">
                 <label>Correo *</label>
@@ -248,7 +382,7 @@ const Login = () => {
             </div>
             <div className="form-group">
               <label>Contraseña *</label>
-              <input name="password" type="password" value={registerData.password} onChange={handleRegisterChange} placeholder="Mínimo 6 caracteres" required />
+              <input name="password" type="password" value={registerData.password} onChange={handleRegisterChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
             </div>
 
             <button type="submit" className="btn-primary" disabled={loading}>

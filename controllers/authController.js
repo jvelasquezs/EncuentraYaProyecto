@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'criptomapa_secret_2026!', {
-    expiresIn: '30d',
+    expiresIn: '15m',
   });
 };
 
@@ -22,6 +22,10 @@ const registerStore = async (req, res) => {
 
     if (!nombreTienda || !responsable || !rif || !telefono || !correo || !password) {
       return res.status(400).json({ error: 'Todos los campos obligatorios son requeridos.' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
     }
 
     const db = getDb();
@@ -78,7 +82,7 @@ const registerStore = async (req, res) => {
     res.status(201).json({
       _id: result.lastInsertRowid,
       nombreTienda,
-      rol: 'Vendedor',
+      rol: 'Comercio',
       token: generateToken(result.lastInsertRowid)
     });
   } catch (error) {
@@ -97,11 +101,19 @@ const login = async (req, res) => {
     const store = db.prepare('SELECT * FROM stores WHERE correo = ?').get(correo);
 
     if (store && (await bcrypt.compare(password, store.password))) {
+      // Verificar si la cuenta está inhabilitada
+      if (store.estado === 'Inhabilitado') {
+        return res.status(403).json({
+          error: 'inhabilitado',
+          message: 'Tu cuenta ha sido inhabilitada. Contacta al administrador para más información.'
+        });
+      }
+
       res.json({
         _id: store.id,
         nombreTienda: store.nombreTienda,
         nombre: store.nombreTienda,
-        rol: 'Vendedor',
+        rol: store.rol || 'Comercio',
         token: generateToken(store.id)
       });
     } else {

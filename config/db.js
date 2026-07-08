@@ -34,6 +34,8 @@ function initTables() {
       monedas TEXT DEFAULT '[]',
       latitud REAL,
       longitud REAL,
+      rol TEXT DEFAULT 'Comercio',
+      estado TEXT DEFAULT 'Activo',
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -50,6 +52,30 @@ function initTables() {
       FOREIGN KEY (tienda_id) REFERENCES stores(id) ON DELETE CASCADE
     );
   `);
+
+  // Migración para bases de datos existentes
+  try {
+    db.prepare("ALTER TABLE stores ADD COLUMN rol TEXT DEFAULT 'Comercio'").run();
+    console.log('🗄️  Migración: Columna "rol" añadida a la tabla "stores".');
+  } catch (e) {
+    // Si la columna ya existe, SQLite lanzará un error que ignoramos de forma segura.
+  }
+
+  // Renombrar Vendedor a Comercio
+  try {
+    db.prepare("UPDATE stores SET rol = 'Comercio' WHERE rol = 'Vendedor' OR rol IS NULL").run();
+  } catch (e) {}
+
+  // Migración: columna estado
+  try {
+    db.prepare("ALTER TABLE stores ADD COLUMN estado TEXT DEFAULT 'Activo'").run();
+    console.log('🗄️  Migración: Columna "estado" añadida a la tabla "stores".');
+  } catch (e) {}
+
+  // Asegurar que registros existentes sin estado tengan 'Activo'
+  try {
+    db.prepare("UPDATE stores SET estado = 'Activo' WHERE estado IS NULL").run();
+  } catch (e) {}
 }
 
 module.exports = { getDb };

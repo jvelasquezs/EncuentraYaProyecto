@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import AdminDashboard from './AdminDashboard';
 
 const API_URL = 'http://localhost:3000';
 
@@ -67,7 +68,7 @@ const Dashboard = () => {
 
     loadLeaflet().then(() => {
       const L = window.L;
-      const map = L.map(mapRef.current).setView([10.4806, -66.9036], 14);
+      const map = L.map(mapRef.current).setView([9.9110, -67.3550], 14);
       mapInstanceRef.current = map;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -138,6 +139,10 @@ const Dashboard = () => {
   };
 
   if (!user) return null;
+
+  if (user.rol === 'Administrador') {
+    return <AdminDashboard />;
+  }
 
   return (
     <div className="dashboard">

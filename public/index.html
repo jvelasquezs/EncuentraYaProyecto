@@ -459,6 +459,123 @@
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
 
+        /* --- BOTÓN MI UBICACIÓN --- */
+        .btn-my-location {
+            position: absolute;
+            bottom: 30px;
+            right: 16px;
+            z-index: 1000;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            background: var(--bg-secondary);
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .btn-my-location:hover {
+            background: var(--brand-color);
+            color: #0b0f19;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
+            transform: scale(1.08);
+        }
+
+        .btn-my-location.locating {
+            animation: pulse-locate 1.2s infinite;
+            border-color: var(--brand-color);
+            color: var(--brand-color);
+        }
+
+        @keyframes pulse-locate {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(0, 255, 163, 0); }
+        }
+
+        /* --- MARCADOR PERSONALIZADO DE TIENDA --- */
+        .store-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .store-marker-label {
+            background: rgba(11, 15, 25, 0.92);
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .store-marker-icon {
+            width: 36px;
+            height: 36px;
+            background: #111827;
+            border: 2.5px solid #1f2937;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+            transition: all 0.25s ease;
+        }
+
+        .store-marker:hover .store-marker-icon {
+            background: #1f2937;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 16px rgba(0, 255, 163, 0.35);
+        }
+
+        .store-marker:hover .store-marker-label {
+            border-color: var(--brand-color);
+            color: var(--brand-color);
+        }
+
+        .store-marker-icon i {
+            transform: rotate(45deg);
+            font-size: 15px;
+            color: #f8fafc;
+        }
+
+        .store-marker:hover .store-marker-icon i {
+            color: var(--brand-color);
+        }
+
+        /* --- MARCADOR DE USUARIO --- */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4);
+            animation: user-pulse 2s infinite;
+        }
+
+        @keyframes user-pulse {
+            0%, 100% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 0 14px rgba(59, 130, 246, 0), 0 2px 8px rgba(0, 0, 0, 0.4); }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             body {
@@ -557,7 +674,11 @@
         </div>
     </div>
 
-    <div id="map"></div>
+    <div id="map" style="position: relative;">
+        <button class="btn-my-location" id="btnMyLocation" title="Ir a mi ubicación">
+            <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+    </div>
 
     <!-- Lightbox de Logo -->
     <div id="lightbox" class="lightbox" onclick="closeLightbox()">
@@ -567,8 +688,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Inicializar mapa centrado en Venezuela
-        const map = L.map('map', { zoomControl: false }).setView([10.4806, -66.9036], 14); 
+        // Inicializar mapa centrado en San Juan de los Morros, Guárico, Venezuela
+        const map = L.map('map', { zoomControl: false }).setView([9.9110, -67.3550], 14); 
         
         L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -576,15 +697,33 @@
             attribution: '© Encuentra Ya Global Ecosystem'
         }).addTo(map);
 
-        // Icono verde personalizado
-        const greenIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
+        // Icono personalizado de tienda (negro con ícono de store y nombre encima)
+        function createStoreIcon(storeName) {
+            return L.divIcon({
+                className: '',
+                html: `
+                    <div class="store-marker">
+                        <div class="store-marker-label">${storeName}</div>
+                        <div class="store-marker-icon">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                    </div>
+                `,
+                iconSize: [40, 56],
+                iconAnchor: [20, 56],
+                popupAnchor: [0, -58]
+            });
+        }
+
+        // Icono de ubicación del usuario (punto azul pulsante)
+        const userLocationIcon = L.divIcon({
+            className: '',
+            html: '<div class="user-location-marker"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
         });
+
+        let userLocationMarker = null;
 
         function buildContactHtml(comercio) {
             let html = '<div class="contact-links">';
@@ -703,6 +842,19 @@
             }
         }
 
+        function checkQueryParamsAndFocus() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeId = urlParams.get('storeId');
+            const lat = parseFloat(urlParams.get('lat'));
+            const lng = parseFloat(urlParams.get('lng'));
+
+            if (storeId && !isNaN(lat) && !isNaN(lng)) {
+                setTimeout(() => {
+                    flyToStore(lat, lng, storeId);
+                }, 600);
+            }
+        }
+
         async function cargarComercios() {
             try {
                 const res = await fetch('/api/comercios');
@@ -726,10 +878,14 @@
                 // Crear marcadores en el mapa
                 comercios.forEach(comercio => {
                     const [longitud, latitud] = comercio.ubicacion.coordinates;
-                    const marker = L.marker([latitud, longitud], { icon: greenIcon }).addTo(map);
+                    const storeIcon = createStoreIcon(comercio.nombre);
+                    const marker = L.marker([latitud, longitud], { icon: storeIcon }).addTo(map);
                     marker.bindPopup(buildPopupHtml(comercio), { maxWidth: 360, minWidth: 320 });
                     markers[comercio._id] = marker;
                 });
+
+                // Auto enfocar comercio si viene en los query params
+                checkQueryParamsAndFocus();
 
             } catch (err) {
                 console.error("Error conectando con la API:", err);
@@ -747,6 +903,48 @@
         function closeLightbox() {
             document.getElementById('lightbox').classList.remove('active');
         }
+
+        // --- BOTÓN MI UBICACIÓN ---
+        const btnMyLocation = document.getElementById('btnMyLocation');
+
+        btnMyLocation.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert('Tu navegador no soporta geolocalización.');
+                return;
+            }
+
+            btnMyLocation.classList.add('locating');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    // Remover marcador anterior si existe
+                    if (userLocationMarker) {
+                        map.removeLayer(userLocationMarker);
+                    }
+
+                    // Crear marcador de ubicación del usuario
+                    userLocationMarker = L.marker([latitude, longitude], { icon: userLocationIcon }).addTo(map);
+                    userLocationMarker.bindPopup('<div style="font-family: Plus Jakarta Sans, sans-serif; padding: 6px; font-size: 13px; font-weight: 600; color: #3b82f6;"><i class="fa-solid fa-location-dot"></i> Estás aquí</div>');
+
+                    // Volar a la ubicación
+                    map.flyTo([latitude, longitude], 16, { duration: 1.5 });
+                    userLocationMarker.openPopup();
+
+                    btnMyLocation.classList.remove('locating');
+                },
+                (error) => {
+                    btnMyLocation.classList.remove('locating');
+                    let msg = 'No se pudo obtener tu ubicación.';
+                    if (error.code === 1) msg = 'Permiso de ubicación denegado. Habilita la ubicación en tu navegador.';
+                    if (error.code === 2) msg = 'Ubicación no disponible.';
+                    if (error.code === 3) msg = 'Tiempo de espera agotado.';
+                    alert(msg);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+            );
+        });
 
         // Cargar comercios al iniciar
         cargarComercios();

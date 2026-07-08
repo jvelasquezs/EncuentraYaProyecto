@@ -20,6 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/comercios', require('./Routes/comercioRoutes'));
 app.use('/api/auth', require('./Routes/authRoutes'));
 app.use('/api/products', require('./Routes/productRoutes'));
+app.use('/api/admin', require('./Routes/adminRoutes'));
 
 // 🚀 INICIALIZACIÓN DEL SERVIDOR
 app.listen(PORT, () => {
