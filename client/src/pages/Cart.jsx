@@ -45,7 +45,9 @@ const Cart = () => {
             <img src={item.imagen} alt={item.nombre} />
             <div style={{flex: 1}}>
               <h3 style={{fontSize: '18px', fontWeight: '400', marginBottom: '10px'}}>{item.nombre}</h3>
-              <p style={{color: '#3483fa'}}>Eliminar</p>
+              <p style={{color: 'var(--crypt-danger)', cursor: 'pointer', fontWeight: '600'}} onClick={() => removeFromCart(item._id)}>
+                <i className="fa-solid fa-trash-can"></i> Eliminar
+              </p>
             </div>
             <div>
               <p style={{fontSize: '20px'}}>${item.precio}</p>

@@ -20,17 +20,17 @@ const ProductDetail = () => {
   if (!product) return <div>Cargando...</div>;
 
   return (
-    <div style={{display: 'flex', gap: '40px', background: 'white', padding: '40px', borderRadius: '4px'}}>
-      <div style={{flex: 2, textAlign: 'center'}}>
-        <img src={product.imagen} alt={product.nombre} style={{maxWidth: '100%', maxHeight: '500px'}} />
+    <div className="product-detail-container">
+      <div className="product-detail-media">
+        <img src={product.imagen} alt={product.nombre} className="product-detail-img" />
       </div>
-      <div style={{flex: 1, border: '1px solid #e6e6e6', padding: '24px', borderRadius: '8px'}}>
-        <p style={{color: '#666', fontSize: '14px', marginBottom: '10px'}}>Nuevo | +100 vendidos</p>
-        <h1 style={{fontSize: '22px', marginBottom: '20px'}}>{product.nombre}</h1>
-        <p style={{fontSize: '36px', fontWeight: '300', marginBottom: '20px'}}>${product.precio}</p>
-        <p style={{fontSize: '16px', marginBottom: '20px'}}>Stock disponible: {product.stock}</p>
-        <button className="btn-primary" style={{marginBottom: '10px'}}>Comprar ahora</button>
-        <button className="btn-primary" style={{background: 'rgba(65,137,230,.15)', color: '#3483fa'}} onClick={() => {addToCart(product); alert('Agregado al carrito');}}>Agregar al carrito</button>
+      <div className="product-detail-actions">
+        <p className="product-detail-subtitle">Nuevo | +100 vendidos</p>
+        <h1 className="product-detail-title">{product.nombre}</h1>
+        <p className="product-detail-price">${product.precio}</p>
+        <p className="product-detail-stock">Stock disponible: {product.stock}</p>
+        <button className="btn-primary" style={{ marginBottom: '10px' }}>Comprar ahora</button>
+        <button className="btn-primary btn-secondary-blue" onClick={() => { addToCart(product); alert('Agregado al carrito'); }}>Agregar al carrito</button>
       </div>
     </div>
   );

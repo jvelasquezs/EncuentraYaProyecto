@@ -48,6 +48,7 @@
             flex-direction: column;
             box-shadow: 10px 0 30px rgba(0,0,0,0.5);
             z-index: 10;
+            transition: all 0.3s ease;
         }
 
         .brand-header {
@@ -576,6 +577,116 @@
             50% { box-shadow: 0 0 0 14px rgba(59, 130, 246, 0), 0 2px 8px rgba(0, 0, 0, 0.4); }
         }
 
+        /* Brand Header Actions & Collapsing styles */
+        .brand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .brand-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-back-dashboard {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .btn-back-dashboard:hover {
+            background: rgba(0, 255, 163, 0.12);
+            border-color: var(--brand-color);
+            color: var(--brand-color);
+        }
+        .btn-back-dashboard i {
+            color: inherit !important;
+            -webkit-text-fill-color: inherit !important;
+            background: none !important;
+            background-clip: unset !important;
+            font-size: 14px !important;
+        }
+
+        .btn-register-header {
+            display: none; /* Hidden on desktop */
+        }
+        .btn-register-header span {
+            color: #05070f !important;
+            -webkit-text-fill-color: #05070f !important;
+            background: none !important;
+            background-clip: unset !important;
+        }
+        .btn-register-header i {
+            color: #05070f !important;
+            -webkit-text-fill-color: #05070f !important;
+            background: none !important;
+            background-clip: unset !important;
+            font-size: 13px !important;
+        }
+
+        .btn-toggle-sidebar-trigger {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle-sidebar-trigger:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--brand-color);
+            color: var(--brand-color);
+        }
+
+        .btn-map-toggle-sidebar {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1000;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-secondary);
+            color: var(--brand-color);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .btn-map-toggle-sidebar:hover {
+            background: var(--brand-color);
+            color: #0b0f19;
+            box-shadow: 0 0 12px rgba(0, 255, 163, 0.4);
+        }
+
+        #sidebar.collapsed {
+            margin-left: -400px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             body {
@@ -584,9 +695,46 @@
             #sidebar {
                 width: 100%;
                 height: 40vh;
+                transition: all 0.3s ease;
+            }
+            #sidebar.collapsed {
+                height: 60px; /* Only show header */
+                margin-left: 0;
+            }
+            #sidebar.collapsed .content-tabs,
+            #sidebar.collapsed .stats-bar {
+                display: none;
             }
             #map {
                 height: 60vh;
+                transition: all 0.3s ease;
+            }
+            #sidebar.collapsed ~ #map {
+                height: calc(100vh - 60px);
+            }
+            .btn-register-header {
+                display: inline-flex;
+                background: var(--brand-gradient);
+                color: #05070f;
+                font-weight: 700;
+                font-size: 11px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                text-decoration: none;
+                align-items: center;
+                gap: 5px;
+            }
+            .btn-register-header:hover {
+                box-shadow: 0 0 12px rgba(0, 255, 163, 0.4);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .btn-register-header span {
+                display: none;
+            }
+            .btn-register-header {
+                padding: 6px 10px;
             }
         }
 
@@ -644,8 +792,21 @@
 
     <div id="sidebar">
         <div class="brand-header">
-            <i class="fa-solid fa-layer-group"></i>
-            <h1>Encuentra<span> Ya</span></h1>
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <a href="http://localhost:5173/dashboard" class="btn-back-dashboard" title="Ir al Panel de Control">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <i class="fa-solid fa-layer-group"></i>
+                <h1>Encuentra<span> Ya</span></h1>
+            </div>
+            <div class="brand-header-actions">
+                <a href="http://localhost:5173/register" class="btn-register-header" id="headerRegister" title="Registra tu Comercio">
+                    <i class="fa-solid fa-rocket"></i> <span>Registrar</span>
+                </a>
+                <button class="btn-toggle-sidebar-trigger" id="btnToggleSidebar" title="Ocultar panel">
+                    <i class="fa-solid fa-eye-slash"></i>
+                </button>
+            </div>
         </div>
         
         <div class="content-tabs">
@@ -677,6 +838,9 @@
     <div id="map" style="position: relative;">
         <button class="btn-my-location" id="btnMyLocation" title="Ir a mi ubicación">
             <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+        <button class="btn-map-toggle-sidebar" id="btnMapToggleSidebar" title="Mostrar panel">
+            <i class="fa-solid fa-eye"></i>
         </button>
     </div>
 
@@ -944,6 +1108,50 @@
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
             );
+        });
+
+        // --- CONTROL DE OCULTAR/MOSTRAR SIDEBAR ---
+        const sidebar = document.getElementById('sidebar');
+        const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+        const btnMapToggleSidebar = document.getElementById('btnMapToggleSidebar');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            
+            // Actualizar icono en la cabecera
+            const toggleIcon = btnToggleSidebar.querySelector('i');
+            if (isCollapsed) {
+                toggleIcon.className = 'fa-solid fa-eye';
+                btnToggleSidebar.title = 'Mostrar panel';
+                
+                // Mostrar botón flotante en el mapa solo en pantallas de escritorio
+                if (window.innerWidth > 768) {
+                    btnMapToggleSidebar.style.display = 'flex';
+                }
+            } else {
+                toggleIcon.className = 'fa-solid fa-eye-slash';
+                btnToggleSidebar.title = 'Ocultar panel';
+                btnMapToggleSidebar.style.display = 'none';
+            }
+            
+            // Invalidar tamaño del mapa para reajustar Leaflet tras transiciones CSS
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 350);
+        }
+
+        btnToggleSidebar.addEventListener('click', toggleSidebar);
+        btnMapToggleSidebar.addEventListener('click', toggleSidebar);
+
+        // Ocultar botón flotante de mapa en móviles al cambiar tamaño de pantalla
+        window.addEventListener('resize', () => {
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            if (isCollapsed && window.innerWidth <= 768) {
+                btnMapToggleSidebar.style.display = 'none';
+            } else if (isCollapsed && window.innerWidth > 768) {
+                btnMapToggleSidebar.style.display = 'flex';
+            }
         });
 
         // Cargar comercios al iniciar

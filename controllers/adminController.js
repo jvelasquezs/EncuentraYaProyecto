@@ -95,16 +95,31 @@ const createStore = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const logoUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(nombreTienda) + '&background=00ffa3&color=0b0f19&size=120&bold=true&format=png';
+    // Obtener la URL del logo (si se subió archivo, usar su URL, sino usar placeholder)
+    let logoUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(nombreTienda) + '&background=00ffa3&color=0b0f19&size=120&bold=true&format=png';
+    if (req.file) {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      logoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
 
+    // Normalizar plataformas y monedas (pueden venir como string JSON o cadena separada por comas debido a FormData)
     let plataformasArray = [];
     if (plataformas) {
-      plataformasArray = Array.isArray(plataformas) ? plataformas : plataformas.split(',').map(s => s.trim()).filter(s => s);
+      try {
+        plataformasArray = JSON.parse(plataformas);
+      } catch (e) {
+        plataformasArray = Array.isArray(plataformas) ? plataformas : plataformas.split(',').map(s => s.trim()).filter(s => s);
+      }
     }
 
     let monedasArray = [];
     if (monedas) {
-      monedasArray = Array.isArray(monedas) ? monedas : monedas.split(',').map(s => s.trim()).filter(s => s);
+      try {
+        monedasArray = JSON.parse(monedas);
+      } catch (e) {
+        monedasArray = Array.isArray(monedas) ? monedas : monedas.split(',').map(s => s.trim()).filter(s => s);
+      }
     }
 
     const result = db.prepare(`

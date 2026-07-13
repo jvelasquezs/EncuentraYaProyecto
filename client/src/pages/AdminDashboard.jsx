@@ -1,6 +1,8 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import { TagSelector } from '../components/TagSelector';
+import { PLATAFORMAS_OPTIONS, MONEDAS_OPTIONS } from '../components/constants';
 
 const API_URL = 'http://localhost:3000';
 
@@ -69,35 +71,50 @@ const AdminDashboard = () => {
     nombreTienda: '', responsable: '', rif: '', telefono: '',
     correo: '', password: '', descripcion: '',
     contacto_whatsapp: '', contacto_instagram: '',
-    plataformas: '', monedas: '', rol: 'Comercio'
+    rol: 'Comercio'
   });
+  const [selectedPlataformas, setSelectedPlataformas] = useState([]);
+  const [selectedMonedas, setSelectedMonedas] = useState([]);
+  const [logoFile, setLogoFile] = useState(null);
 
   const getAuthHeaders = () => ({
     headers: { Authorization: `Bearer ${user.token}` }
   });
 
-  const loadStats = async () => {
+  const getAuthMultipartHeaders = () => ({
+    headers: { 
+      Authorization: `Bearer ${user.token}`,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  const loadStats = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/admin/stats`, getAuthHeaders());
+      const { data } = await axios.get(`${API_URL}/api/admin/stats`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       setStats(data);
     } catch (err) {
       console.error('Error cargando estadísticas:', err);
     }
-  };
+  }, [user.token]);
 
-  const loadStores = async () => {
+  const loadStores = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/admin/stores`, getAuthHeaders());
+      const { data } = await axios.get(`${API_URL}/api/admin/stores`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       setStores(data);
     } catch (err) {
       console.error('Error cargando comercios:', err);
     }
-  };
+  }, [user.token]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadStats();
     loadStores();
-  }, []);
+  }, [loadStats, loadStores]);
 
   const handleNewStoreChange = (e) => {
     setNewStore({ ...newStore, [e.target.name]: e.target.value });
@@ -106,15 +123,43 @@ const AdminDashboard = () => {
   const handleCreateStore = async (e) => {
     e.preventDefault();
     setMsg({ text: '', type: '' });
+
+    if (newStore.password.length < 8) {
+      setMsg({ text: 'La contraseña debe tener al menos 8 caracteres.', type: 'error' });
+      return;
+    }
+
     try {
-      await axios.post(`${API_URL}/api/admin/stores`, newStore, getAuthHeaders());
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombreTienda', newStore.nombreTienda);
+      formDataToSend.append('responsable', newStore.responsable);
+      formDataToSend.append('rif', newStore.rif);
+      formDataToSend.append('telefono', newStore.telefono);
+      formDataToSend.append('correo', newStore.correo);
+      formDataToSend.append('password', newStore.password);
+      formDataToSend.append('descripcion', newStore.descripcion || '');
+      formDataToSend.append('contacto_whatsapp', newStore.contacto_whatsapp || '');
+      formDataToSend.append('contacto_instagram', newStore.contacto_instagram || '');
+      formDataToSend.append('plataformas', JSON.stringify(selectedPlataformas));
+      formDataToSend.append('monedas', JSON.stringify(selectedMonedas));
+      formDataToSend.append('rol', newStore.rol || 'Comercio');
+      
+      if (logoFile) {
+        formDataToSend.append('logo', logoFile);
+      }
+
+      await axios.post(`${API_URL}/api/admin/stores`, formDataToSend, getAuthMultipartHeaders());
       setMsg({ text: '¡Comercio creado exitosamente!', type: 'success' });
+      
       setNewStore({
         nombreTienda: '', responsable: '', rif: '', telefono: '',
         correo: '', password: '', descripcion: '',
-        contacto_whatsapp: '', contacto_instagram: '',
-        plataformas: '', monedas: '', rol: 'Comercio'
+        contacto_whatsapp: '', contacto_instagram: '', rol: 'Comercio'
       });
+      setSelectedPlataformas([]);
+      setSelectedMonedas([]);
+      setLogoFile(null);
+      
       setShowAddStore(false);
       loadStats();
       loadStores();
@@ -224,6 +269,10 @@ const AdminDashboard = () => {
             <div className="admin-form-title">
               <i className="fa-solid fa-store"></i> Registrar Nuevo Comercio
             </div>
+
+            <div className="form-section-title">
+              <i className="fa-solid fa-building"></i> Datos del Comercio
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Nombre del Comercio *</label>
@@ -240,51 +289,70 @@ const AdminDashboard = () => {
                 <input name="responsable" value={newStore.responsable} onChange={handleNewStoreChange} placeholder="Nombre del responsable" required />
               </div>
               <div className="form-group">
-                <label>Teléfono *</label>
-                <input name="telefono" value={newStore.telefono} onChange={handleNewStoreChange} placeholder="+58 412-5551234" required />
+                <label>Logo del Comercio (Opcional)</label>
+                <input 
+                  type="file" 
+                  name="logo" 
+                  onChange={(e) => setLogoFile(e.target.files[0])} 
+                  accept="image/*" 
+                  style={{ padding: '8px 12px' }}
+                />
               </div>
+            </div>
+            <div className="form-group">
+              <label>Descripción del Comercio</label>
+              <textarea name="descripcion" value={newStore.descripcion} onChange={handleNewStoreChange} placeholder="¿Qué ofrece tu comercio?" rows="2" />
+            </div>
+
+            <div className="form-section-title">
+              <i className="fa-solid fa-wallet"></i> Métodos de Pago
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Correo *</label>
-                <input name="correo" type="email" value={newStore.correo} onChange={handleNewStoreChange} placeholder="correo@comercio.com" required />
+                <TagSelector label="Pasarelas / Canales Aceptados" options={PLATAFORMAS_OPTIONS} selected={selectedPlataformas} onChange={setSelectedPlataformas} />
               </div>
               <div className="form-group">
-                <label>Contraseña *</label>
-                <input name="password" type="password" value={newStore.password} onChange={handleNewStoreChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
+                <TagSelector label="Monedas / Divisas Aceptadas" options={MONEDAS_OPTIONS} selected={selectedMonedas} onChange={setSelectedMonedas} />
               </div>
+            </div>
+
+            <div className="form-section-title">
+              <i className="fa-solid fa-address-book"></i> Datos de Contacto
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label>WhatsApp</label>
-                <input name="contacto_whatsapp" value={newStore.contacto_whatsapp} onChange={handleNewStoreChange} placeholder="+584125551234" />
+                <input name="contacto_whatsapp" value={newStore.contacto_whatsapp} onChange={handleNewStoreChange} placeholder="Ej: +584125551234" />
               </div>
               <div className="form-group">
                 <label>Instagram</label>
                 <input name="contacto_instagram" value={newStore.contacto_instagram} onChange={handleNewStoreChange} placeholder="@micomercio" />
               </div>
             </div>
-            <div className="form-group">
-              <label>Descripción</label>
-              <input name="descripcion" value={newStore.descripcion} onChange={handleNewStoreChange} placeholder="¿Qué ofrece este comercio?" />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Teléfono *</label>
+                <input name="telefono" value={newStore.telefono} onChange={handleNewStoreChange} placeholder="+58 412-5551234" required />
+              </div>
+              <div className="form-group">
+                <label>Correo *</label>
+                <input name="correo" type="email" value={newStore.correo} onChange={handleNewStoreChange} placeholder="correo@comercio.com" required />
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Pasarelas / Canales</label>
-                <input name="plataformas" value={newStore.plataformas} onChange={handleNewStoreChange} placeholder="Binance Pay, Pago Móvil, Zelle" />
+                <label>Contraseña *</label>
+                <input name="password" type="password" value={newStore.password} onChange={handleNewStoreChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
               </div>
               <div className="form-group">
-                <label>Monedas / Divisas</label>
-                <input name="monedas" value={newStore.monedas} onChange={handleNewStoreChange} placeholder="USDT, BTC, USD, BS" />
+                <label>Rol *</label>
+                <select name="rol" value={newStore.rol} onChange={handleNewStoreChange} className="admin-select">
+                  <option value="Comercio">Comercio</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
               </div>
             </div>
-            <div className="form-group">
-              <label>Rol</label>
-              <select name="rol" value={newStore.rol} onChange={handleNewStoreChange} className="admin-select">
-                <option value="Comercio">Comercio</option>
-                <option value="Administrador">Administrador</option>
-              </select>
-            </div>
+
             <button type="submit" className="dash-btn dash-btn-primary" style={{ marginTop: '12px' }}>
               <i className="fa-solid fa-check"></i> Crear Comercio
             </button>
@@ -308,7 +376,7 @@ const AdminDashboard = () => {
             <tbody>
               {stores.map(store => (
                 <tr key={store._id}>
-                  <td>
+                  <td data-label="Comercio" className="admin-store-td">
                     <div className="admin-store-cell">
                       <img src={store.logo} alt={store.nombreTienda} className="admin-store-logo"
                         onError={e => e.target.src = 'https://via.placeholder.com/36/1e293b/00ffa3?text=?'} />
@@ -318,16 +386,16 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td><code>{store.rif}</code></td>
-                  <td>{store.correo}</td>
-                  <td>
+                  <td data-label="RIF"><code>{store.rif}</code></td>
+                  <td data-label="Correo">{store.correo}</td>
+                  <td data-label="Rol">
                     <span className={`admin-role-badge ${store.rol === 'Administrador' ? 'role-admin' : 'role-comercio'}`}>
                       <i className={`fa-solid ${store.rol === 'Administrador' ? 'fa-shield-halved' : 'fa-store'}`}></i>
                       {store.rol}
                     </span>
                   </td>
-                  <td><span className="admin-product-count">{store.productCount}</span></td>
-                  <td>
+                  <td data-label="Productos"><span className="admin-product-count">{store.productCount}</span></td>
+                  <td data-label="Ubicación">
                     {store.latitud && store.longitud ? (
                       <a 
                         href={`http://localhost:3000/?lat=${store.latitud}&lng=${store.longitud}&storeId=${store._id}`}
@@ -341,7 +409,7 @@ const AdminDashboard = () => {
                       <span className="admin-location-unset"><i className="fa-solid fa-location-crosshairs"></i> Pendiente</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     {store._id === user._id ? (
                       <span className="admin-status-badge status-active">
                         <i className="fa-solid fa-circle-check"></i> Activo
