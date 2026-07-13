@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
+import { API_URL } from '../components/constants';
+
 const Home = () => {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
     // Para demo, si no hay backend, mostramos productos dummy
-    axios.get('http://localhost:3000/api/products')
+    axios.get(`${API_URL}/api/products`)
       .then(res => setProducts(res.data))
       .catch(err => {
         console.error(err);
