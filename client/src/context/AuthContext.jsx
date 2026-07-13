@@ -3,7 +3,7 @@ import axios from 'axios';
 
 export const AuthContext = createContext();
 
-import { API_URL } from '../components/constants';
+const API_URL = 'http://localhost:3000';
 
 const checkTokenExpiry = (token) => {
   if (!token) return true;

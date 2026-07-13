@@ -2,7 +2,9 @@ import { useContext, useState, useEffect, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { TagSelector } from '../components/TagSelector';
-import { PLATAFORMAS_OPTIONS, MONEDAS_OPTIONS, API_URL } from '../components/constants';
+import { PLATAFORMAS_OPTIONS, MONEDAS_OPTIONS } from '../components/constants';
+
+const API_URL = 'http://localhost:3000';
 
 // Componente de gráfica de dona SVG puro
 const DonutChart = ({ comercios, administradores }) => {
@@ -79,6 +81,12 @@ const AdminDashboard = () => {
     headers: { Authorization: `Bearer ${user.token}` }
   });
 
+  const getAuthMultipartHeaders = () => ({
+    headers: { 
+      Authorization: `Bearer ${user.token}`,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
 
   const loadStats = useCallback(async () => {
     try {
@@ -140,7 +148,7 @@ const AdminDashboard = () => {
         formDataToSend.append('logo', logoFile);
       }
 
-      await axios.post(`${API_URL}/api/admin/stores`, formDataToSend, getAuthHeaders());
+      await axios.post(`${API_URL}/api/admin/stores`, formDataToSend, getAuthMultipartHeaders());
       setMsg({ text: '¡Comercio creado exitosamente!', type: 'success' });
       
       setNewStore({
@@ -181,7 +189,7 @@ const AdminDashboard = () => {
           <span className="admin-badge">Administrador</span>
         </div>
         <div className="dash-actions">
-          <a href={API_URL} className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
+          <a href="http://localhost:3000" className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
             <i className="fa-solid fa-map-location-dot"></i> Ver Mapa
           </a>
           <button onClick={logout} className="dash-btn dash-btn-danger">
@@ -249,7 +257,7 @@ const AdminDashboard = () => {
             <h3><i className="fa-solid fa-building"></i> Gestión de Comercios</h3>
             <p className="admin-section-subtitle">{stores.length} comercios registrados en el sistema</p>
           </div>
-          <button onClick={() => { setShowAddStore(!showAddStore); setMsg({ text: '', type: '' }); }} className="dash-btn dash-btn-primary">
+          <button onClick={() => setShowAddStore(!showAddStore)} className="dash-btn dash-btn-primary">
             <i className={`fa-solid ${showAddStore ? 'fa-xmark' : 'fa-plus'}`}></i>
             {showAddStore ? 'Cancelar' : 'Nuevo Comercio'}
           </button>
@@ -261,13 +269,6 @@ const AdminDashboard = () => {
             <div className="admin-form-title">
               <i className="fa-solid fa-store"></i> Registrar Nuevo Comercio
             </div>
-
-            {msg.text && (
-              <div className={`admin-msg ${msg.type === 'error' ? 'admin-msg-error' : 'admin-msg-success'}`} style={{ marginTop: '10px', marginBottom: '20px' }}>
-                <i className={`fa-solid ${msg.type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}`}></i>
-                {msg.text}
-              </div>
-            )}
 
             <div className="form-section-title">
               <i className="fa-solid fa-building"></i> Datos del Comercio
@@ -397,7 +398,7 @@ const AdminDashboard = () => {
                   <td data-label="Ubicación">
                     {store.latitud && store.longitud ? (
                       <a 
-                        href={`${API_URL}/?lat=${store.latitud}&lng=${store.longitud}&storeId=${store._id}`}
+                        href={`http://localhost:3000/?lat=${store.latitud}&lng=${store.longitud}&storeId=${store._id}`}
                         className="admin-location-set-link"
                         target="_blank"
                         rel="noreferrer"

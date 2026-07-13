@@ -2,8 +2,6 @@ import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-import { API_URL } from './constants';
-
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -28,7 +26,7 @@ const Navbar = () => {
         </button>
 
         <div className={`nav-links ${menuOpen ? 'active' : ''}`}>
-          <a href={API_URL} className="nav-link" onClick={closeMenu}>
+          <a href="http://localhost:3000" className="nav-link" onClick={closeMenu}>
             <i className="fa-solid fa-map-location-dot"></i> Mapa
           </a>
           {user ? (

@@ -3,15 +3,13 @@ import { useParams } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import axios from 'axios';
 
-import { API_URL } from '../components/constants';
-
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/products/${id}`)
+    axios.get(`http://localhost:3000/api/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(err => {
         // Fallback for demo

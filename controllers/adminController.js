@@ -71,8 +71,6 @@ const getAllStores = async (req, res) => {
 // @route POST /api/admin/stores
 const createStore = async (req, res) => {
   try {
-    console.log('admin createStore req.body:', req.body);
-    console.log('admin createStore req.file:', req.file);
     const {
       nombreTienda, responsable, rif, telefono, correo, password,
       contacto_whatsapp, contacto_instagram, descripcion,

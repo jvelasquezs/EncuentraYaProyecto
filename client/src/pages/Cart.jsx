@@ -4,8 +4,6 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-import { API_URL } from '../components/constants';
-
 const Cart = () => {
   const { cartItems, getCartTotal, clearCart, removeFromCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
@@ -23,7 +21,7 @@ const Cart = () => {
     };
 
     try {
-      await axios.post(`${API_URL}/api/orders`, ordenData, {
+      await axios.post('http://localhost:3000/api/orders', ordenData, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       alert(`Compra exitosa con ${metodo}. Ref: ${ordenData.referencia}`);
