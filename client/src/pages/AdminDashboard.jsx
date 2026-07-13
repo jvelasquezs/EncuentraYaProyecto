@@ -249,7 +249,7 @@ const AdminDashboard = () => {
             <h3><i className="fa-solid fa-building"></i> Gestión de Comercios</h3>
             <p className="admin-section-subtitle">{stores.length} comercios registrados en el sistema</p>
           </div>
-          <button onClick={() => setShowAddStore(!showAddStore)} className="dash-btn dash-btn-primary">
+          <button onClick={() => { setShowAddStore(!showAddStore); setMsg({ text: '', type: '' }); }} className="dash-btn dash-btn-primary">
             <i className={`fa-solid ${showAddStore ? 'fa-xmark' : 'fa-plus'}`}></i>
             {showAddStore ? 'Cancelar' : 'Nuevo Comercio'}
           </button>
@@ -261,6 +261,13 @@ const AdminDashboard = () => {
             <div className="admin-form-title">
               <i className="fa-solid fa-store"></i> Registrar Nuevo Comercio
             </div>
+
+            {msg.text && (
+              <div className={`admin-msg ${msg.type === 'error' ? 'admin-msg-error' : 'admin-msg-success'}`} style={{ marginTop: '10px', marginBottom: '20px' }}>
+                <i className={`fa-solid ${msg.type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}`}></i>
+                {msg.text}
+              </div>
+            )}
 
             <div className="form-section-title">
               <i className="fa-solid fa-building"></i> Datos del Comercio
