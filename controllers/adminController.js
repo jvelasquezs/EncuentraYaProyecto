@@ -72,12 +72,14 @@ const getAllStores = async (req, res) => {
 const createStore = async (req, res) => {
   try {
     const {
-      nombreTienda, responsable, rif, telefono, correo, password,
+      nombreTienda, responsable, rif, correo, password,
       contacto_whatsapp, contacto_instagram, descripcion,
       plataformas, monedas, rol
     } = req.body;
 
-    if (!nombreTienda || !responsable || !rif || !telefono || !correo || !password) {
+    const telefono = req.body.telefono || '';
+
+    if (!nombreTienda || !responsable || !rif || !correo || !password) {
       return res.status(400).json({ error: 'Todos los campos obligatorios son requeridos.' });
     }
 

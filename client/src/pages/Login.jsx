@@ -21,13 +21,13 @@ const Login = () => {
     nombreTienda: '',
     responsable: '',
     rif: '',
-    telefono: '',
     correo: '',
     password: '',
     descripcion: '',
-    contacto_whatsapp: '',
     contacto_instagram: '',
   });
+  const [wsPrefix, setWsPrefix] = useState('0412');
+  const [wsNumber, setWsNumber] = useState('');
   const [selectedPlataformas, setSelectedPlataformas] = useState([]);
   const [selectedMonedas, setSelectedMonedas] = useState([]);
   const [logoFile, setLogoFile] = useState(null);
@@ -45,7 +45,16 @@ const Login = () => {
   }, [isLogin]);
 
   const handleRegisterChange = (e) => {
-    setRegisterData({ ...registerData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'rif') {
+      const cleanedValue = value.replace(/\D/g, '').slice(0, 10);
+      setRegisterData({ ...registerData, [name]: cleanedValue });
+    } else if (name === 'responsable') {
+      const cleanedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+      setRegisterData({ ...registerData, [name]: cleanedValue });
+    } else {
+      setRegisterData({ ...registerData, [name]: value });
+    }
   };
 
   const handleLoginSubmit = async (e) => {
@@ -70,6 +79,21 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
+    if (registerData.rif.length !== 10) {
+      setError('El RIF debe tener exactamente 10 dígitos.');
+      return;
+    }
+
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(registerData.responsable)) {
+      setError('El nombre del responsable solo debe contener letras y espacios.');
+      return;
+    }
+
+    if (wsNumber && wsNumber.length !== 7) {
+      setError('El número de WhatsApp debe tener exactamente 7 dígitos.');
+      return;
+    }
+
     if (registerData.password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres.');
       return;
@@ -81,11 +105,10 @@ const Login = () => {
       formDataToSend.append('nombreTienda', registerData.nombreTienda);
       formDataToSend.append('responsable', registerData.responsable);
       formDataToSend.append('rif', registerData.rif);
-      formDataToSend.append('telefono', registerData.telefono);
       formDataToSend.append('correo', registerData.correo);
       formDataToSend.append('password', registerData.password);
       formDataToSend.append('descripcion', registerData.descripcion || '');
-      formDataToSend.append('contacto_whatsapp', registerData.contacto_whatsapp || '');
+      formDataToSend.append('contacto_whatsapp', wsNumber ? `+58${wsPrefix.substring(1)}${wsNumber}` : '');
       formDataToSend.append('contacto_instagram', registerData.contacto_instagram || '');
       formDataToSend.append('plataformas', JSON.stringify(selectedPlataformas));
       formDataToSend.append('monedas', JSON.stringify(selectedMonedas));
@@ -225,13 +248,33 @@ const Login = () => {
               </div>
               <div className="form-group">
                 <label>RIF *</label>
-                <input name="rif" value={registerData.rif} onChange={handleRegisterChange} placeholder="Ej: J-12345678-9" required />
+                <input 
+                  type="text"
+                  name="rif" 
+                  value={registerData.rif} 
+                  onChange={handleRegisterChange} 
+                  placeholder="Ej: 1234567890" 
+                  maxLength={10} 
+                  minLength={10} 
+                  pattern="[0-9]{10}" 
+                  title="El RIF debe tener exactamente 10 dígitos numéricos" 
+                  required 
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Responsable *</label>
-                <input name="responsable" value={registerData.responsable} onChange={handleRegisterChange} placeholder="Nombre del responsable" required />
+                <input 
+                  type="text"
+                  name="responsable" 
+                  value={registerData.responsable} 
+                  onChange={handleRegisterChange} 
+                  placeholder="Nombre del responsable" 
+                  pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                  title="El nombre del responsable solo debe contener letras y espacios" 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label>Logo del Comercio (Opcional)</label>
@@ -267,7 +310,30 @@ const Login = () => {
             <div className="form-row">
               <div className="form-group">
                 <label>WhatsApp</label>
-                <input name="contacto_whatsapp" value={registerData.contacto_whatsapp} onChange={handleRegisterChange} placeholder="Ej: +584125551234" />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select 
+                    value={wsPrefix} 
+                    onChange={(e) => setWsPrefix(e.target.value)}
+                    style={{ width: '110px', flexShrink: 0 }}
+                  >
+                    <option value="0412">0412</option>
+                    <option value="0414">0414</option>
+                    <option value="0416">0416</option>
+                    <option value="0422">0422</option>
+                    <option value="0424">0424</option>
+                    <option value="0426">0426</option>
+                  </select>
+                  <input 
+                    type="text" 
+                    value={wsNumber} 
+                    onChange={(e) => setWsNumber(e.target.value.replace(/\D/g, '').slice(0, 7))}
+                    placeholder="5551234" 
+                    maxLength={7}
+                    pattern="[0-9]{7}"
+                    title="El número de WhatsApp debe tener 7 dígitos"
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Instagram</label>
@@ -276,17 +342,13 @@ const Login = () => {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Teléfono *</label>
-                <input name="telefono" value={registerData.telefono} onChange={handleRegisterChange} placeholder="+58 412-5551234" required />
-              </div>
-              <div className="form-group">
                 <label>Correo *</label>
                 <input name="correo" type="email" value={registerData.correo} onChange={handleRegisterChange} placeholder="correo@comercio.com" required />
               </div>
-            </div>
-            <div className="form-group">
-              <label>Contraseña *</label>
-              <input name="password" type="password" value={registerData.password} onChange={handleRegisterChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
+              <div className="form-group">
+                <label>Contraseña *</label>
+                <input name="password" type="password" value={registerData.password} onChange={handleRegisterChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
+              </div>
             </div>
 
             <button type="submit" className="btn-primary" disabled={loading}>

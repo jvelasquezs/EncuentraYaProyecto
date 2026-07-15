@@ -68,11 +68,13 @@ const AdminDashboard = () => {
   const [showAddStore, setShowAddStore] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [newStore, setNewStore] = useState({
-    nombreTienda: '', responsable: '', rif: '', telefono: '',
+    nombreTienda: '', responsable: '', rif: '',
     correo: '', password: '', descripcion: '',
-    contacto_whatsapp: '', contacto_instagram: '',
+    contacto_instagram: '',
     rol: 'Comercio'
   });
+  const [wsPrefix, setWsPrefix] = useState('0412');
+  const [wsNumber, setWsNumber] = useState('');
   const [selectedPlataformas, setSelectedPlataformas] = useState([]);
   const [selectedMonedas, setSelectedMonedas] = useState([]);
   const [logoFile, setLogoFile] = useState(null);
@@ -117,12 +119,36 @@ const AdminDashboard = () => {
   }, [loadStats, loadStores]);
 
   const handleNewStoreChange = (e) => {
-    setNewStore({ ...newStore, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'rif') {
+      const cleanedValue = value.replace(/\D/g, '').slice(0, 10);
+      setNewStore({ ...newStore, [name]: cleanedValue });
+    } else if (name === 'responsable') {
+      const cleanedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+      setNewStore({ ...newStore, [name]: cleanedValue });
+    } else {
+      setNewStore({ ...newStore, [name]: value });
+    }
   };
 
   const handleCreateStore = async (e) => {
     e.preventDefault();
     setMsg({ text: '', type: '' });
+
+    if (newStore.rif.length !== 10) {
+      setMsg({ text: 'El RIF debe tener exactamente 10 dígitos.', type: 'error' });
+      return;
+    }
+
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(newStore.responsable)) {
+      setMsg({ text: 'El nombre del responsable solo debe contener letras y espacios.', type: 'error' });
+      return;
+    }
+
+    if (wsNumber && wsNumber.length !== 7) {
+      setMsg({ text: 'El número de WhatsApp debe tener exactamente 7 dígitos.', type: 'error' });
+      return;
+    }
 
     if (newStore.password.length < 8) {
       setMsg({ text: 'La contraseña debe tener al menos 8 caracteres.', type: 'error' });
@@ -134,11 +160,10 @@ const AdminDashboard = () => {
       formDataToSend.append('nombreTienda', newStore.nombreTienda);
       formDataToSend.append('responsable', newStore.responsable);
       formDataToSend.append('rif', newStore.rif);
-      formDataToSend.append('telefono', newStore.telefono);
       formDataToSend.append('correo', newStore.correo);
       formDataToSend.append('password', newStore.password);
       formDataToSend.append('descripcion', newStore.descripcion || '');
-      formDataToSend.append('contacto_whatsapp', newStore.contacto_whatsapp || '');
+      formDataToSend.append('contacto_whatsapp', wsNumber ? `+58${wsPrefix.substring(1)}${wsNumber}` : '');
       formDataToSend.append('contacto_instagram', newStore.contacto_instagram || '');
       formDataToSend.append('plataformas', JSON.stringify(selectedPlataformas));
       formDataToSend.append('monedas', JSON.stringify(selectedMonedas));
@@ -152,10 +177,12 @@ const AdminDashboard = () => {
       setMsg({ text: '¡Comercio creado exitosamente!', type: 'success' });
       
       setNewStore({
-        nombreTienda: '', responsable: '', rif: '', telefono: '',
+        nombreTienda: '', responsable: '', rif: '',
         correo: '', password: '', descripcion: '',
-        contacto_whatsapp: '', contacto_instagram: '', rol: 'Comercio'
+        contacto_instagram: '', rol: 'Comercio'
       });
+      setWsPrefix('0412');
+      setWsNumber('');
       setSelectedPlataformas([]);
       setSelectedMonedas([]);
       setLogoFile(null);
@@ -280,13 +307,33 @@ const AdminDashboard = () => {
               </div>
               <div className="form-group">
                 <label>RIF *</label>
-                <input name="rif" value={newStore.rif} onChange={handleNewStoreChange} placeholder="Ej: J-12345678-9" required />
+                <input 
+                  type="text"
+                  name="rif" 
+                  value={newStore.rif} 
+                  onChange={handleNewStoreChange} 
+                  placeholder="Ej: 1234567890" 
+                  maxLength={10} 
+                  minLength={10} 
+                  pattern="[0-9]{10}" 
+                  title="El RIF debe tener exactamente 10 dígitos numéricos" 
+                  required 
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Responsable *</label>
-                <input name="responsable" value={newStore.responsable} onChange={handleNewStoreChange} placeholder="Nombre del responsable" required />
+                <input 
+                  type="text"
+                  name="responsable" 
+                  value={newStore.responsable} 
+                  onChange={handleNewStoreChange} 
+                  placeholder="Nombre del responsable" 
+                  pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                  title="El nombre del responsable solo debe contener letras y espacios" 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label>Logo del Comercio (Opcional)</label>
@@ -322,7 +369,30 @@ const AdminDashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label>WhatsApp</label>
-                <input name="contacto_whatsapp" value={newStore.contacto_whatsapp} onChange={handleNewStoreChange} placeholder="Ej: +584125551234" />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select 
+                    value={wsPrefix} 
+                    onChange={(e) => setWsPrefix(e.target.value)}
+                    style={{ width: '110px', flexShrink: 0 }}
+                  >
+                    <option value="0412">0412</option>
+                    <option value="0414">0414</option>
+                    <option value="0416">0416</option>
+                    <option value="0422">0422</option>
+                    <option value="0424">0424</option>
+                    <option value="0426">0426</option>
+                  </select>
+                  <input 
+                    type="text" 
+                    value={wsNumber} 
+                    onChange={(e) => setWsNumber(e.target.value.replace(/\D/g, '').slice(0, 7))}
+                    placeholder="5551234" 
+                    maxLength={7}
+                    pattern="[0-9]{7}"
+                    title="El número de WhatsApp debe tener 7 dígitos"
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>Instagram</label>
@@ -331,18 +401,8 @@ const AdminDashboard = () => {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Teléfono *</label>
-                <input name="telefono" value={newStore.telefono} onChange={handleNewStoreChange} placeholder="+58 412-5551234" required />
-              </div>
-              <div className="form-group">
                 <label>Correo *</label>
                 <input name="correo" type="email" value={newStore.correo} onChange={handleNewStoreChange} placeholder="correo@comercio.com" required />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Contraseña *</label>
-                <input name="password" type="password" value={newStore.password} onChange={handleNewStoreChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
               </div>
               <div className="form-group">
                 <label>Rol *</label>
@@ -351,6 +411,10 @@ const AdminDashboard = () => {
                   <option value="Administrador">Administrador</option>
                 </select>
               </div>
+            </div>
+            <div className="form-group">
+              <label>Contraseña *</label>
+              <input name="password" type="password" value={newStore.password} onChange={handleNewStoreChange} placeholder="Mínimo 8 caracteres" minLength="8" required />
             </div>
 
             <button type="submit" className="dash-btn dash-btn-primary" style={{ marginTop: '12px' }}>

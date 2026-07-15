@@ -20,7 +20,20 @@ const Dashboard = () => {
   const [newProduct, setNewProduct] = useState({
     nombre: '', descripcion: '', precio: '', stock: '', categoria: '', imagen: ''
   });
-  const [productMsg, setProductMsg] = useState('');
+  const [productError, setProductError] = useState('');
+  const [productSuccess, setProductSuccess] = useState('');
+  const [productImageFile, setProductImageFile] = useState(null);
+
+  // Estados para la edición de producto
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [editProductForm, setEditProductForm] = useState({
+    id: '', nombre: '', descripcion: '', precio: '', stock: '', categoria: '', imagen: ''
+  });
+  const [editProductImageFile, setEditProductImageFile] = useState(null);
+  const [editProductPreview, setEditProductPreview] = useState('');
+  const [editProductError, setEditProductError] = useState('');
+  const [editProductSuccess, setEditProductSuccess] = useState('');
+  const [showProductImageLightbox, setShowProductImageLightbox] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -116,15 +129,33 @@ const Dashboard = () => {
 
   const addProduct = async (e) => {
     e.preventDefault();
-    setProductMsg('');
+    setProductError('');
+    setProductSuccess('');
     try {
-      await axios.post(`${API_URL}/api/products`, newProduct, getAuthHeaders());
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombre', newProduct.nombre);
+      formDataToSend.append('descripcion', newProduct.descripcion);
+      formDataToSend.append('precio', newProduct.precio);
+      formDataToSend.append('stock', newProduct.stock);
+      formDataToSend.append('categoria', newProduct.categoria);
+
+      if (productImageFile) {
+        formDataToSend.append('imagen', productImageFile);
+      }
+
+      await axios.post(`${API_URL}/api/products`, formDataToSend, {
+        headers: { 
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
       setNewProduct({ nombre: '', descripcion: '', precio: '', stock: '', categoria: '', imagen: '' });
+      setProductImageFile(null);
       setShowAddProduct(false);
-      setProductMsg('¡Producto añadido con éxito!');
+      setProductSuccess('¡Producto añadido con éxito!');
       loadProducts();
     } catch (err) {
-      setProductMsg(err.response?.data?.error || 'Error al crear el producto.');
+      setProductError(err.response?.data?.error || 'Error al crear el producto.');
     }
   };
 
@@ -135,6 +166,63 @@ const Dashboard = () => {
       loadProducts();
     } catch (err) {
       alert('Error al eliminar.');
+    }
+  };
+
+  const handleEditProductClick = (product) => {
+    setEditProductForm({
+      id: product._id,
+      nombre: product.nombre,
+      descripcion: product.descripcion,
+      precio: product.precio,
+      stock: product.stock,
+      categoria: product.categoria,
+      imagen: product.imagen
+    });
+    setEditProductPreview(product.imagen || 'https://via.placeholder.com/120/1e293b/94a3b8?text=IMG');
+    setEditProductImageFile(null);
+    setEditProductError('');
+    setEditProductSuccess('');
+    setShowEditProductModal(true);
+  };
+
+  const handleEditProductImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditProductImageFile(file);
+      setEditProductPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEditProductSubmit = async (e) => {
+    e.preventDefault();
+    setEditProductError('');
+    setEditProductSuccess('');
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombre', editProductForm.nombre);
+      formDataToSend.append('descripcion', editProductForm.descripcion);
+      formDataToSend.append('precio', editProductForm.precio);
+      formDataToSend.append('stock', editProductForm.stock);
+      formDataToSend.append('categoria', editProductForm.categoria);
+
+      if (editProductImageFile) {
+        formDataToSend.append('imagen', editProductImageFile);
+      }
+
+      await axios.put(`${API_URL}/api/products/${editProductForm.id}`, formDataToSend, {
+        headers: { 
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      setEditProductSuccess('¡Producto actualizado con éxito!');
+      loadProducts();
+      setTimeout(() => {
+        setShowEditProductModal(false);
+      }, 1000);
+    } catch (err) {
+      setEditProductError(err.response?.data?.error || 'Error al actualizar el producto.');
     }
   };
 
@@ -192,18 +280,32 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {productMsg && <div className="dash-msg">{productMsg}</div>}
+        {productSuccess && <div className="dash-msg">{productSuccess}</div>}
+        {productError && <div className="dash-msg dash-msg-error">{productError}</div>}
 
         {showAddProduct && (
           <form onSubmit={addProduct} className="product-form">
             <div className="form-row">
               <div className="form-group">
                 <label>Nombre *</label>
-                <input value={newProduct.nombre} onChange={e => setNewProduct({...newProduct, nombre: e.target.value})} required />
+                <input 
+                  value={newProduct.nombre} 
+                  onChange={e => setNewProduct({...newProduct, nombre: e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})} 
+                  pattern="[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                  title="El nombre del producto solo debe contener letras, números y espacios" 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label>Categoría *</label>
-                <input value={newProduct.categoria} onChange={e => setNewProduct({...newProduct, categoria: e.target.value})} placeholder="Ej: Tecnología" required />
+                <input 
+                  value={newProduct.categoria} 
+                  onChange={e => setNewProduct({...newProduct, categoria: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})} 
+                  placeholder="Ej: Tecnología" 
+                  pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                  title="La categoría solo debe contener letras y espacios" 
+                  required 
+                />
               </div>
             </div>
             <div className="form-group">
@@ -220,8 +322,13 @@ const Dashboard = () => {
                 <input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} required />
               </div>
               <div className="form-group">
-                <label>URL Imagen</label>
-                <input value={newProduct.imagen} onChange={e => setNewProduct({...newProduct, imagen: e.target.value})} placeholder="https://..." />
+                <label>Imagen del Producto (Opcional)</label>
+                <input 
+                  type="file" 
+                  onChange={e => setProductImageFile(e.target.files[0])} 
+                  accept="image/*" 
+                  style={{ padding: '8px 12px' }}
+                />
               </div>
             </div>
             <button type="submit" className="dash-btn dash-btn-primary">
@@ -235,7 +342,13 @@ const Dashboard = () => {
             <p className="empty-msg">No tienes productos publicados aún. ¡Agrega tu primer producto!</p>
           ) : (
             products.map(p => (
-              <div key={p._id} className="dash-product-card">
+              <div 
+                key={p._id} 
+                className="dash-product-card" 
+                onClick={() => handleEditProductClick(p)} 
+                style={{ cursor: 'pointer' }}
+                title="Hacer clic para ver / editar"
+              >
                 <img src={p.imagen || 'https://via.placeholder.com/300'} alt={p.nombre} onError={e => e.target.src='https://via.placeholder.com/300/1e293b/94a3b8?text=IMG'} />
                 <div className="dash-product-info">
                   <h4>{p.nombre}</h4>
@@ -244,7 +357,13 @@ const Dashboard = () => {
                     <span className="dash-product-price">${Number(p.precio).toLocaleString()}</span>
                     <span className="dash-product-stock">Stock: {p.stock}</span>
                   </div>
-                  <button onClick={() => deleteProduct(p._id)} className="dash-btn-delete">
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      deleteProduct(p._id); 
+                    }} 
+                    className="dash-btn-delete"
+                  >
                     <i className="fa-solid fa-trash"></i> Eliminar
                   </button>
                 </div>
@@ -253,6 +372,118 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {showEditProductModal && (
+        <div className="profile-modal-overlay" onClick={() => setShowEditProductModal(false)}>
+          <div className="profile-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-modal-header">
+              <h3><i className="fa-solid fa-pen-to-square"></i> Editar Producto</h3>
+              <button className="profile-modal-close-btn" onClick={() => setShowEditProductModal(false)}>&times;</button>
+            </div>
+            
+            <form onSubmit={handleEditProductSubmit}>
+              <div className="profile-modal-body">
+                {editProductError && <div className="dash-msg dash-msg-error" style={{ marginBottom: '16px' }}>{editProductError}</div>}
+                {editProductSuccess && <div className="dash-msg" style={{ marginBottom: '16px' }}>{editProductSuccess}</div>}
+
+                {/* IMAGEN DEL PRODUCTO */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
+                  <img 
+                    src={editProductPreview} 
+                    alt="Vista previa del producto" 
+                    style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }} 
+                    title="Ver imagen completa"
+                    onClick={() => setShowProductImageLightbox(true)}
+                    onError={(e) => e.target.src = 'https://via.placeholder.com/120/1e293b/94a3b8?text=IMG'}
+                  />
+                  <label className="profile-logo-upload-btn" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                    Cambiar Imagen
+                    <input type="file" onChange={handleEditProductImageChange} accept="image/*" style={{ display: 'none' }} />
+                  </label>
+                </div>
+
+                {/* NOMBRE Y CATEGORÍA */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nombre del Producto *</label>
+                    <input 
+                      type="text" 
+                      value={editProductForm.nombre} 
+                      onChange={e => setEditProductForm({...editProductForm, nombre: e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})} 
+                      pattern="[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                      title="El nombre solo debe contener letras, números y espacios" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Categoría *</label>
+                    <input 
+                      type="text" 
+                      value={editProductForm.categoria} 
+                      onChange={e => setEditProductForm({...editProductForm, categoria: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})} 
+                      pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+" 
+                      title="La categoría solo debe contener letras y espacios" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* DESCRIPCIÓN */}
+                <div className="form-group">
+                  <label>Descripción *</label>
+                  <textarea 
+                    value={editProductForm.descripcion} 
+                    onChange={e => setEditProductForm({...editProductForm, descripcion: e.target.value})} 
+                    rows="3" 
+                    required 
+                  />
+                </div>
+
+                {/* PRECIO Y STOCK */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Precio ($) *</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={editProductForm.precio} 
+                      onChange={e => setEditProductForm({...editProductForm, precio: e.target.value})} 
+                      required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Stock *</label>
+                    <input 
+                      type="number" 
+                      value={editProductForm.stock} 
+                      onChange={e => setEditProductForm({...editProductForm, stock: e.target.value})} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+              </div>
+              <div className="profile-modal-footer">
+                <button type="button" className="dash-btn dash-btn-danger" onClick={() => setShowEditProductModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="dash-btn dash-btn-primary">
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showProductImageLightbox && (
+        <div className="lightbox-overlay" onClick={() => setShowProductImageLightbox(false)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button className="lightbox-close-btn" onClick={() => setShowProductImageLightbox(false)}>&times;</button>
+            <img src={editProductPreview} alt="Producto completo" className="lightbox-image" onError={(e) => e.target.src = 'https://via.placeholder.com/300/1e293b/94a3b8?text=IMG'} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

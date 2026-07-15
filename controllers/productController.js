@@ -36,7 +36,7 @@ const getProductById = async (req, res) => {
     const db = getDb();
     const p = db.prepare(`
       SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, p.categoria, p.imagen, p.tienda_id,
-             s.nombreTienda
+             s.nombreTienda, s.contacto_whatsapp
       FROM products p
       LEFT JOIN stores s ON p.tienda_id = s.id
       WHERE p.id = ?
@@ -51,7 +51,11 @@ const getProductById = async (req, res) => {
         stock: p.stock,
         categoria: p.categoria,
         imagen: p.imagen,
-        tienda: { _id: p.tienda_id, nombreTienda: p.nombreTienda }
+        tienda: { 
+          _id: p.tienda_id, 
+          nombreTienda: p.nombreTienda,
+          contacto_whatsapp: p.contacto_whatsapp 
+        }
       });
     } else {
       res.status(404).json({ error: 'Producto no encontrado' });
@@ -65,10 +69,27 @@ const getProductById = async (req, res) => {
 // @route POST /api/products
 const createProduct = async (req, res) => {
   try {
-    const { nombre, descripcion, precio, stock, categoria, imagen } = req.body;
+    const { nombre, descripcion, precio, stock, categoria } = req.body;
 
     if (!nombre || !descripcion || precio == null || stock == null || !categoria) {
       return res.status(400).json({ error: 'Faltan campos obligatorios del producto.' });
+    }
+
+    // Validar nombre (solo letras, números y espacios)
+    if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(nombre)) {
+      return res.status(400).json({ error: 'El nombre del producto solo debe contener letras, números y espacios.' });
+    }
+
+    // Validar categoría (solo letras y espacios)
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(categoria)) {
+      return res.status(400).json({ error: 'La categoría del producto solo debe contener letras y espacios.' });
+    }
+
+    let imagenUrl = 'https://via.placeholder.com/300';
+    if (req.file) {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      imagenUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     }
 
     const db = getDb();
@@ -78,13 +99,13 @@ const createProduct = async (req, res) => {
     `).run(
       req.user._id,
       nombre, descripcion, parseFloat(precio), parseInt(stock), categoria,
-      imagen || 'https://via.placeholder.com/300'
+      imagenUrl
     );
 
     res.status(201).json({
       _id: result.lastInsertRowid,
       tienda_id: req.user._id,
-      nombre, descripcion, precio, stock, categoria, imagen
+      nombre, descripcion, precio, stock, categoria, imagen: imagenUrl
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -133,4 +154,63 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductById, createProduct, getProductsByStore, getMyProducts, deleteProduct };
+// @desc Editar producto
+// @route PUT /api/products/:id
+const updateProduct = async (req, res) => {
+  try {
+    const db = getDb();
+    const product = db.prepare('SELECT * FROM products WHERE id = ? AND tienda_id = ?').get(req.params.id, req.user._id);
+
+    if (!product) {
+      return res.status(404).json({ error: 'Producto no encontrado o no te pertenece.' });
+    }
+
+    const { nombre, descripcion, precio, stock, categoria } = req.body;
+
+    if (nombre && !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(nombre)) {
+      return res.status(400).json({ error: 'El nombre del producto solo debe contener letras, números y espacios.' });
+    }
+
+    if (categoria && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(categoria)) {
+      return res.status(400).json({ error: 'La categoría del producto solo debe contener letras y espacios.' });
+    }
+
+    let imagenUrl = product.imagen;
+    if (req.file) {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      imagenUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
+
+    // Actualizar campos (usar los existentes si no se especifican nuevos)
+    const finalNombre = nombre !== undefined ? nombre : product.nombre;
+    const finalDescripcion = descripcion !== undefined ? descripcion : product.descripcion;
+    const finalPrecio = precio !== undefined ? parseFloat(precio) : product.precio;
+    const finalStock = stock !== undefined ? parseInt(stock) : product.stock;
+    const finalCategoria = categoria !== undefined ? categoria : product.categoria;
+
+    db.prepare(`
+      UPDATE products 
+      SET nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria = ?, imagen = ?
+      WHERE id = ?
+    `).run(
+      finalNombre, finalDescripcion, finalPrecio, finalStock, finalCategoria, imagenUrl,
+      req.params.id
+    );
+
+    res.json({
+      _id: product.id,
+      tienda_id: req.user._id,
+      nombre: finalNombre,
+      descripcion: finalDescripcion,
+      precio: finalPrecio,
+      stock: finalStock,
+      categoria: finalCategoria,
+      imagen: imagenUrl
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getProducts, getProductById, createProduct, getProductsByStore, getMyProducts, deleteProduct, updateProduct };

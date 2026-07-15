@@ -15,12 +15,14 @@ const registerStore = async (req, res) => {
     console.log('registerStore req.body:', req.body);
     console.log('registerStore req.file:', req.file);
     const {
-      nombreTienda, responsable, rif, telefono, correo, password,
+      nombreTienda, responsable, rif, correo, password,
       contacto_whatsapp, contacto_instagram, descripcion,
       plataformas, monedas
     } = req.body;
 
-    if (!nombreTienda || !responsable || !rif || !telefono || !correo || !password) {
+    const telefono = req.body.telefono || '';
+
+    if (!nombreTienda || !responsable || !rif || !correo || !password) {
       return res.status(400).json({ error: 'Todos los campos obligatorios son requeridos.' });
     }
 
@@ -80,9 +82,22 @@ const registerStore = async (req, res) => {
     );
 
     res.status(201).json({
-      _id: result.lastInsertRowid,
+      id: result.lastInsertRowid,
       nombreTienda,
+      responsable,
+      rif,
+      telefono: telefono || '',
+      correo,
+      logo: logoUrl,
+      contacto_whatsapp: contacto_whatsapp || null,
+      contacto_instagram: contacto_instagram || null,
+      descripcion: descripcion || null,
+      plataformas: plataformasArray,
+      monedas: monedasArray,
+      latitud: null,
+      longitud: null,
       rol: 'Comercio',
+      estado: 'Activo',
       token: generateToken(result.lastInsertRowid)
     });
   } catch (error) {
@@ -110,10 +125,22 @@ const login = async (req, res) => {
       }
 
       res.json({
-        _id: store.id,
+        id: store.id,
         nombreTienda: store.nombreTienda,
-        nombre: store.nombreTienda,
+        responsable: store.responsable,
+        rif: store.rif,
+        telefono: store.telefono,
+        correo: store.correo,
+        logo: store.logo,
+        contacto_whatsapp: store.contacto_whatsapp,
+        contacto_instagram: store.contacto_instagram,
+        descripcion: store.descripcion,
+        plataformas: JSON.parse(store.plataformas || '[]'),
+        monedas: JSON.parse(store.monedas || '[]'),
+        latitud: store.latitud,
+        longitud: store.longitud,
         rol: store.rol || 'Comercio',
+        estado: store.estado,
         token: generateToken(store.id)
       });
     } else {

@@ -353,6 +353,7 @@
             text-decoration: none;
             font-weight: 600;
             transition: all 0.2s ease;
+            color: #cbd5e1 !important;
         }
 
         .contact-btn:hover {
@@ -361,26 +362,38 @@
 
         .contact-btn-whatsapp {
             background: rgba(37, 211, 102, 0.15);
-            color: #25d366;
+            color: #ffffff;
             border: 1px solid rgba(37, 211, 102, 0.25);
+        }
+        .contact-btn-whatsapp i {
+            color: #25d366;
         }
 
         .contact-btn-instagram {
             background: rgba(225, 48, 108, 0.15);
-            color: #e1306c;
+            color: #ffffff;
             border: 1px solid rgba(225, 48, 108, 0.25);
+        }
+        .contact-btn-instagram i {
+            color: #e1306c;
         }
 
         .contact-btn-phone {
             background: rgba(0, 184, 255, 0.1);
-            color: #00b8ff;
+            color: #ffffff;
             border: 1px solid rgba(0, 184, 255, 0.2);
+        }
+        .contact-btn-phone i {
+            color: #00b8ff;
         }
 
         .contact-btn-email {
             background: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
+            color: #ffffff;
             border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+        .contact-btn-email i {
+            color: #ffc107;
         }
 
         /* Productos en popup */
@@ -742,7 +755,7 @@
         .lightbox {
             display: none;
             position: fixed;
-            z-index: 99999;
+            z-index: 300000;
             left: 0;
             top: 0;
             width: 100%;
@@ -785,6 +798,126 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        }
+
+        /* --- MODAL DETALLES DE PRODUCTO --- */
+        .product-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 250000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .product-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .product-modal-card {
+            background: var(--bg-secondary);
+            border: 1.5px solid rgba(0, 255, 163, 0.25);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(0, 255, 163, 0.1);
+            position: relative;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+
+        .product-modal-overlay.active .product-modal-card {
+            transform: scale(1);
+        }
+
+        .product-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--text-muted);
+            cursor: pointer;
+            z-index: 10;
+            transition: color 0.2s ease;
+        }
+
+        .product-modal-close:hover {
+            color: var(--danger);
+        }
+
+        .product-modal-card img {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .product-modal-info {
+            padding: 24px;
+        }
+
+        .product-modal-info h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .product-modal-badge {
+            display: inline-block;
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--brand-color);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(0, 255, 163, 0.15);
+        }
+
+        .product-modal-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            word-break: break-word;
+        }
+
+        .product-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 16px;
+        }
+
+        .product-modal-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--brand-color);
+        }
+
+        .product-modal-stock {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ff9f43;
+            background: rgba(255, 159, 67, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 159, 67, 0.15);
         }
     </style>
 </head>
@@ -850,6 +983,23 @@
         <img id="lightbox-img" src="" alt="Logo ampliado" />
     </div>
 
+    <!-- Modal de Detalles de Producto -->
+    <div id="product-modal" class="product-modal-overlay" onclick="closeProductModal()">
+        <div class="product-modal-card" onclick="event.stopPropagation()">
+            <span class="product-modal-close" onclick="closeProductModal()">&times;</span>
+            <img id="prod-modal-img" src="" alt="Imagen de producto" style="cursor: pointer;" title="Ver imagen completa" onclick="openLogoLightbox(this.src)" onerror="this.src='https://via.placeholder.com/300/1e293b/94a3b8?text=SIN+IMAGEN'" />
+            <div class="product-modal-info">
+                <h3 id="prod-modal-name"></h3>
+                <span id="prod-modal-cat" class="product-modal-badge"></span>
+                <p id="prod-modal-desc"></p>
+                <div class="product-modal-footer">
+                    <span id="prod-modal-price" class="product-modal-price"></span>
+                    <span id="prod-modal-stock" class="product-modal-stock"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Inicializar mapa centrado en San Juan de los Morros, Guárico, Venezuela
@@ -901,19 +1051,18 @@
                     waNum = '58' + waNum;
                 }
                 const waText = encodeURIComponent("Hola. Me gustaria mas informacion");
-                html += `<a href="https://wa.me/${waNum}?text=${waText}" target="_blank" class="contact-btn contact-btn-whatsapp">
-                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                
+                // Formatear el número para mostrarlo bonito en el botón del teléfono
+                let formattedNumber = comercio.contacto_whatsapp;
+                
+                html += `<a href="https://wa.me/${waNum}?text=${waText}" target="_blank" class="contact-btn contact-btn-phone">
+                    <i class="fa-solid fa-phone"></i> ${formattedNumber}
                 </a>`;
             }
             if (comercio.contacto_instagram) {
                 const igHandle = comercio.contacto_instagram.replace('@', '');
                 html += `<a href="https://instagram.com/${igHandle}" target="_blank" class="contact-btn contact-btn-instagram">
                     <i class="fa-brands fa-instagram"></i> ${comercio.contacto_instagram}
-                </a>`;
-            }
-            if (comercio.telefono) {
-                html += `<a href="tel:${comercio.telefono}" class="contact-btn contact-btn-phone">
-                    <i class="fa-solid fa-phone"></i> ${comercio.telefono}
                 </a>`;
             }
             if (comercio.correo) {
@@ -934,7 +1083,7 @@
             let html = '<div class="popup-products">';
             productos.forEach(p => {
                 html += `
-                    <div class="popup-product-card">
+                    <div class="popup-product-card" style="cursor: pointer;" onclick="openProductModal(${p.id})" title="Hacer clic para ver detalles">
                         <img src="${p.imagen || 'https://via.placeholder.com/110x70'}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/110x70/1e293b/94a3b8?text=IMG'">
                         <div class="prod-info">
                             <div class="prod-name">${p.nombre}</div>
@@ -1000,7 +1149,8 @@
         let markers = {};
 
         function flyToStore(lat, lng, id) {
-            map.flyTo([lat, lng], 17, { duration: 1 });
+            const offset = 0.0015;
+            map.flyTo([lat + offset, lng], 17, { duration: 1 });
             if (markers[id]) {
                 markers[id].openPopup();
             }
@@ -1023,6 +1173,16 @@
             try {
                 const res = await fetch('/api/comercios');
                 const comercios = await res.json();
+
+                // Registrar productos en un mapa global para poder visualizarlos al hacer clic
+                window.allProductsMap = {};
+                comercios.forEach(comercio => {
+                    if (comercio.productos) {
+                        comercio.productos.forEach(p => {
+                            window.allProductsMap[p.id] = p;
+                        });
+                    }
+                });
 
                 // Limpiar marcadores existentes
                 Object.values(markers).forEach(m => map.removeLayer(m));
@@ -1066,6 +1226,24 @@
 
         function closeLightbox() {
             document.getElementById('lightbox').classList.remove('active');
+        }
+
+        function openProductModal(productId) {
+            const product = window.allProductsMap[productId];
+            if (!product) return;
+
+            document.getElementById('prod-modal-img').src = product.imagen || 'https://via.placeholder.com/300/1e293b/94a3b8?text=SIN+IMAGEN';
+            document.getElementById('prod-modal-name').textContent = product.nombre;
+            document.getElementById('prod-modal-cat').textContent = `Categoría: ${product.categoria}`;
+            document.getElementById('prod-modal-desc').textContent = product.descripcion || 'Sin descripción.';
+            document.getElementById('prod-modal-price').textContent = `$${Number(product.precio).toLocaleString()}`;
+            document.getElementById('prod-modal-stock').textContent = `Stock: ${product.stock}`;
+
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.remove('active');
         }
 
         // --- BOTÓN MI UBICACIÓN ---
