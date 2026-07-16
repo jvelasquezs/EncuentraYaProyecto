@@ -52,7 +52,7 @@ const Navbar = () => {
     setModalSuccess('');
     
     try {
-      const API_URL = 'http://localhost:3000';
+      const API_URL = '';
       const { data } = await axios.get(`${API_URL}/api/comercios/perfil`, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
@@ -161,7 +161,7 @@ const Navbar = () => {
         formDataToSend.append('confirmPassword', confirmPassword);
       }
 
-      const API_URL = 'http://localhost:3000';
+      const API_URL = '';
       const { data } = await axios.put(`${API_URL}/api/comercios/perfil`, formDataToSend, {
         headers: { 
           Authorization: `Bearer ${user.token}`
@@ -202,7 +202,7 @@ const Navbar = () => {
         </button>
 
         <div className={`nav-links ${menuOpen ? 'active' : ''}`}>
-          <a href="http://localhost:3000/mapa" className="nav-link" onClick={closeMenu}>
+          <a href="/mapa" className="nav-link" onClick={closeMenu}>
             <i className="fa-solid fa-map-location-dot"></i> Mapa
           </a>
           {user ? (

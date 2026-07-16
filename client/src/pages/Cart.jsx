@@ -21,7 +21,7 @@ const Cart = () => {
     };
 
     try {
-      await axios.post('http://localhost:3000/api/orders', ordenData, {
+      await axios.post('/api/orders', ordenData, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       alert(`Compra exitosa con ${metodo}. Ref: ${ordenData.referencia}`);

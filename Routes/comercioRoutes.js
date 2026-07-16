@@ -7,7 +7,7 @@ const { obtenerComercios, actualizarUbicacion, actualizarPerfil, obtenerPerfil }
 const { protect } = require('../middleware/authMiddleware');
 
 // Asegurar que la carpeta de subidas existe
-const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+const uploadDir = process.env.UPLOADS_PATH || path.join(__dirname, '..', 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

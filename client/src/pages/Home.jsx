@@ -7,7 +7,7 @@ const Home = () => {
 
   useEffect(() => {
     // Para demo, si no hay backend, mostramos productos dummy
-    axios.get('http://localhost:3000/api/products')
+    axios.get('/api/products')
       .then(res => setProducts(res.data))
       .catch(err => {
         console.error(err);

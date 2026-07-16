@@ -358,7 +358,7 @@ const Login = () => {
         )}
 
         <div className="auth-footer">
-          <a href="http://localhost:3000" className="map-link">
+          <a href="/" className="map-link">
             <i className="fa-solid fa-map-location-dot"></i> Volver a Encuentra Ya
           </a>
         </div>

@@ -7,7 +7,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/api/products/${id}`)
+    axios.get(`/api/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(err => {
         // Fallback for demo

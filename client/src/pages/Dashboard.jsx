@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AdminDashboard from './AdminDashboard';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = '';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -240,7 +240,7 @@ const Dashboard = () => {
           <span className="dash-store-name">{user.nombreTienda || user.nombre}</span>
         </div>
         <div className="dash-actions">
-          <a href="http://localhost:3000" className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
+          <a href="/mapa" className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
             <i className="fa-solid fa-map-location-dot"></i> Ver Mapa
           </a>
           <button onClick={logout} className="dash-btn dash-btn-danger">

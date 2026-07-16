@@ -16,7 +16,8 @@ app.use(express.json());
 // Servir archivos del frontend compilado (React)
 app.use(express.static(path.join(__dirname, 'client', 'dist')));
 // Servir subidas de imágenes
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+const uploadsFolder = process.env.UPLOADS_PATH || path.join(__dirname, 'public', 'uploads');
+app.use('/uploads', express.static(uploadsFolder));
 
 // Servir la página del mapa estático en la ruta /mapa
 app.get('/mapa', (req, res) => {

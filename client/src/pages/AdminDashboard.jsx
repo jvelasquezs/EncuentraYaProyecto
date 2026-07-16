@@ -4,7 +4,7 @@ import axios from 'axios';
 import { TagSelector } from '../components/TagSelector';
 import { PLATAFORMAS_OPTIONS, MONEDAS_OPTIONS } from '../components/constants';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = '';
 
 // Componente de gráfica de dona SVG puro
 const DonutChart = ({ comercios, administradores }) => {
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
           <span className="admin-badge">Administrador</span>
         </div>
         <div className="dash-actions">
-          <a href="http://localhost:3000" className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
+          <a href="/mapa" className="dash-btn dash-btn-outline" target="_blank" rel="noreferrer">
             <i className="fa-solid fa-map-location-dot"></i> Ver Mapa
           </a>
           <button onClick={logout} className="dash-btn dash-btn-danger">
@@ -462,7 +462,7 @@ const AdminDashboard = () => {
                   <td data-label="Ubicación">
                     {store.latitud && store.longitud ? (
                       <a 
-                        href={`http://localhost:3000/?lat=${store.latitud}&lng=${store.longitud}&storeId=${store._id}`}
+                        href={`/mapa?lat=${store.latitud}&lng=${store.longitud}&storeId=${store._id}`}
                         className="admin-location-set-link"
                         target="_blank"
                         rel="noreferrer"
