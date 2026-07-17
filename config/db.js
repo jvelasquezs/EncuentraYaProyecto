@@ -82,6 +82,15 @@ function initTables() {
   try {
     db.prepare("UPDATE stores SET estado = 'Activo' WHERE estado IS NULL").run();
   } catch (e) {}
+
+  // Migración: Convertir URLs de uploads absolutas (como localhost) a relativas
+  try {
+    db.prepare("UPDATE products SET imagen = SUBSTR(imagen, INSTR(imagen, '/uploads/')) WHERE imagen LIKE '%/uploads/%' AND imagen LIKE 'http%'").run();
+    db.prepare("UPDATE stores SET logo = SUBSTR(logo, INSTR(logo, '/uploads/')) WHERE logo LIKE '%/uploads/%' AND logo LIKE 'http%'").run();
+    console.log('🗄️  Migración: URLs absolutas de uploads convertidas a relativas con éxito.');
+  } catch (e) {
+    console.error('❌ Error migrando URLs de uploads:', e);
+  }
 }
 
 module.exports = { getDb };

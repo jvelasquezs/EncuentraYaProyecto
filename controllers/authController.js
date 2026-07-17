@@ -44,9 +44,7 @@ const registerStore = async (req, res) => {
     // Obtener la URL del logo (si se subió archivo, usar su URL, sino usar placeholder)
     let logoUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(nombreTienda) + '&background=00ffa3&color=0b0f19&size=120&bold=true&format=png';
     if (req.file) {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      logoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      logoUrl = `/uploads/${req.file.filename}`;
     }
 
     // Normalizar plataformas y monedas (pueden venir como string JSON o cadena separada por comas debido a FormData)

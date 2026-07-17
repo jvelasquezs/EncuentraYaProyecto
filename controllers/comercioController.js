@@ -140,9 +140,7 @@ const actualizarPerfil = async (req, res) => {
     // Manejar el logo (si se subió uno nuevo)
     let logoUrl = currentStore.logo;
     if (req.file) {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      logoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      logoUrl = `/uploads/${req.file.filename}`;
     }
 
     // Normalizar plataformas y monedas

@@ -87,9 +87,7 @@ const createProduct = async (req, res) => {
 
     let imagenUrl = 'https://via.placeholder.com/300';
     if (req.file) {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      imagenUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      imagenUrl = `/uploads/${req.file.filename}`;
     }
 
     const db = getDb();
@@ -177,9 +175,7 @@ const updateProduct = async (req, res) => {
 
     let imagenUrl = product.imagen;
     if (req.file) {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      imagenUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      imagenUrl = `/uploads/${req.file.filename}`;
     }
 
     // Actualizar campos (usar los existentes si no se especifican nuevos)
