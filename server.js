@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 require('dotenv').config();
 
 // Inicializar la base de datos SQLite al arrancar
@@ -17,6 +18,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'client', 'dist')));
 // Servir subidas de imágenes
 const uploadsFolder = process.env.UPLOADS_PATH || path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsFolder)) {
+    fs.mkdirSync(uploadsFolder, { recursive: true });
+}
 app.use('/uploads', express.static(uploadsFolder));
 
 // Servir la página del mapa estático en la ruta /mapa
